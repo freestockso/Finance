@@ -1,0 +1,36 @@
+
+{
+    "Item":"880301",
+    "Name":"煤炭",
+    "Type":"Day", 
+    "Rehab":"Front",
+    "Data":
+    [
+
+        {
+            "2005/06/07":
+            {
+                "Opening":159.89,
+                "Maximum":164.31,
+                "Minimum":157.22,
+                "Close":158.69,
+                "Volume":489895,
+                "Turnover":339753952.00
+            }
+        },
+
+        {
+            "2005/06/08":
+            {
+                "Opening":159.89,
+                "Maximum":164.31,
+                "Minimum":157.22,
+                "Close":158.69,
+                "Volume":489895,
+                "Turnover":339753952.00
+            }
+        }
+
+    ]
+
+}
