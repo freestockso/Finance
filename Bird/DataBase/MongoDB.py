@@ -40,16 +40,16 @@ class Mongo(object):
                 collection.insert_one(d)
             else:
                 self.writeLog.log(u'数据插入失败，MongoDB没有连接')
-        except Exception:
-            self.writeLog.log(Exception)
+        except Exception as e:
+            self.writeLog.log(e)
 
-    def dbQuery(self, dbName, collectionName, d):
+    def dbQuery(self, dbName, collectionName, d, flt = None):
         try:
             """从MongoDB中读取数据，d是查询要求，返回的是数据库查询的指针"""
             if self.dbClient:
                 db = self.dbClient[dbName]
                 collection = db[collectionName]
-                cursor = collection.find(d)
+                cursor = collection.find(d,flt)
                 if cursor:
                     return list(cursor)
                 else:
@@ -57,8 +57,8 @@ class Mongo(object):
             else:
                 self.writeLog.log(u'数据查询失败，MongoDB没有连接')   
                 return []
-        except Exception:
-            self.writeLog.log(Exception)
+        except Exception as e:
+            self.writeLog.log(e)
 
     def dbQueryAll(self, dbName, collectionName):
         try:
@@ -74,18 +74,22 @@ class Mongo(object):
             else:
                 self.writeLog.log(u'数据查询失败，MongoDB没有连接')   
                 return []
-        except Exception:
-            self.writeLog.log(Exception)        
+        except Exception as e:
+            self.writeLog.log(e)        
     
     #def dbUpdate(self, dbName, collectionName, d, flt, upsert=False):
     def dbUpdateBody(self, dbName, collectionName, d, flt):
-        """向MongoDB中更新数据，d是具体数据，flt是过滤条件，upsert代表若无是否要插入"""
-        if self.dbClient:
-            db = self.dbClient[dbName]
-            collection = db[collectionName]
-            collection.update(flt,{'$addToSet':{'Data':d}})
-        else:
-            self.writeLog.log(u'数据更新失败，MongoDB没有连接')   
+        try:
+            """向MongoDB中更新数据，d是具体数据，flt是过滤条件，upsert代表若无是否要插入"""
+            if self.dbClient:
+                db = self.dbClient[dbName]
+                collection = db[collectionName]
+                ResUpdate = collection.update(flt,{'$addToSet':{'Data':d}})
+                print(ResUpdate)
+            else:
+                self.writeLog.log(u'数据更新失败，MongoDB没有连接')
+        except Exception as e:
+            self.writeLog.log(e)         
 
     def dbDelCollection(self, dbName, collectionName):
         if self.dbClient:
@@ -95,21 +99,18 @@ class Mongo(object):
         else:
             self.writeLog.log(u'数据更新失败，MongoDB没有连接')           
 
-testData = {
- "_id":"880301",
- "Item":"880301",
- "Name":"煤炭", 
- "Type":"Day", 
- "Rehab":"Front",
- "Data" : []
- }
-
 if __name__ == '__main__':
     mongo = Mongo()
     #mongo.dbInsert("test","category",testData)
     #mongo.dbInsert("test","category",testData)
     #mongo.dbUpdateBody("test","category",{"Item":"880301"})
-    #datalist = mongo.dbQuery("test","category",{"Item":"880301"})
+    #datalist = mongo.dbQueryAll("stock","IndusCategorys")
     #datalist = mongo.dbQuery("stock","IndusCategorys",{"_id":"880301"})
-    mongo.dbDelCollection("stock","IndusCategorys")
-    #print(datalist)
+    datalist = mongo.dbQuery("stock","IndusCategorys",{"Data":{'2018/08/08': {'Opening': '560.28', 'Maximum': '565.70', 'Minimum': '558.66', 'Close': '562.03', 'Volume': '7005752', 'Turnover': '4701570048.00'}}})
+    #mongo.dbDelCollection("stock","IndusCategorys")
+
+    for item in datalist:
+        for i in item["Data"]:
+            print(i)
+
+    print("Done")

@@ -100,7 +100,7 @@ class TdxDataEngine(object):
         
         CurCategory = None
         CurData = None
-        CurDoc = None
+        CurDoc = {"_id" : ""}
         StorageMode = None
 
         pattHeader = re.compile(r"\d{6}") # matching file header
@@ -115,6 +115,9 @@ class TdxDataEngine(object):
                 CurData =  data[self.STR_CONTENT]
             
                 if re.match(pattHeader, CurData):
+                    # log start execution time, for one txt to mongodb
+                    self.writeLog.logTimeStart()
+
                     HeaderList = re.split(r'\s{1}',CurData) #split by space
                     
                     if (len(HeaderList) != 4):
@@ -155,10 +158,13 @@ class TdxDataEngine(object):
                     StorageMode = 'Update'
 
                 elif re.match(pattFooter, CurData):
+                    # log end execution time, for one txt to mongodb
+                    self.writeLog.logTimeEnd(CurDoc["_id"])
+
                     # ending of each data files
                     Header = {}
                     Body = {}
-                    CurDoc = None
+                    CurDoc = {"_id" : ""}
                     continue
                 else:
                     self.writeLog.log('Matching failed : ' + CurData)
