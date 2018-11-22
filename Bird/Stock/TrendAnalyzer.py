@@ -3,16 +3,20 @@
 import numpy
 import pandas
 import matplotlib
+import mpl_finance as mpf
+import matplotlib.pyplot as plt
+import matplotlib.dates as dates
+from matplotlib.ticker import Formatter
+#import datetime
 
 from Logger import Log
-from DataBase import MongoDB
+#from DataBase import MongoDB
+from DataBase import TdxData
 
 class Trend(object):
     
     def __init__(self):
         self.writeLog = Log.Logger('TrendAnalyzer.txt')
-        self.MongoHandler = MongoDB.Mongo()
-
     
     # the data format is DataFrame
     def Candlestick_MergeData(self, kData, Index, Count):
@@ -72,18 +76,21 @@ class Trend(object):
         rkData = pandas.DataFrame()
 
         CurData = kData[:1]
+        print(CurData) #asd
         CurCount = 1
         for i in range(len(kData)):
             if i != (len(kData) - 1):
                 NextData = kData[(i+1):(i+2)]
+                print(NextData) #asd
             else:
                 #最后一条数据的next data设定为无效值，不存在包含关系。
                 #当最后一条数据与之前数据不存在包含关系时，进行最后一条数据的存储
                 #当最后一条数据与之前数据存在包含关系时，进行数据的合并并存储
-                NextData = pandas.DataFrame([[0.0,0.0,1.0,-1.0]], columns=['open','close','high','low'], index=['2000-01-01 00:00:00'])
+                NextData = pandas.DataFrame([[]])
 
             #whether there is a containment relationship.
             # 前2组if语句，记录包含关系的个数
+            print(CurData.high[-1]) #asd
             if CurData.high[-1] >= NextData.high[-1] and CurData.low[-1] <= NextData.low[-1]:
                 CurCount = CurCount + 1
 
@@ -102,7 +109,78 @@ class Trend(object):
                 rkData = pandas.concat([rkData,tData],axis = 0)
         
         return rkData
+    
+    # 在去掉包含关系后，进行分型处理：顶分型或底分型
+    # 在去掉包含关系后，k线转向必有一个顶分型和一个底分型
+    def Candlestick_TypeAnalysis(self):
+        pass 
+    
+    #将x轴的浮点数格式化成日期小时分钟
+    #默认的x轴格式化是日期被dates.date2num之后的浮点数，因为在上面乘以了1440，所以默认是错误的
+    #只能自己将浮点数格式化为日期时间分钟
+    #参考https://matplotlib.org/examples/pylab_examples/date_index_formatter.html
+    class MyFormatter(Formatter):
+        def __init__(self, dates, fmt = '%Y%m%d %H:%M'):
+            self.dates = dates
+            self.fmt = fmt
 
+        def __call__(self, x, pos = 0):
+            'Return the label for time x at position pos'
+            ind = int(numpy.round(x))
+            #ind就是x轴的刻度数值，不是日期的下标
+            return dates.num2date(ind/1440).strftime(self.fmt)
+
+    # 绘制K线
+    def Candlestick_Drawing(self, kData):
+
+        # kData need to convert time to Pandas' format.
+        tData = kData
+        # convert data to pandas format, ignore it, for the continuesly K-line
+        #tData['date'] = pandas.to_datetime(tData['date'],format = "%Y/%m/%d-%H:%M")
+        #tData['date'] = tData['date'].apply(lambda x:dates.date2num(x)*1440)
+        
+        #convert to matrix
+        tData_mat = tData.values
+
+        asd = range(len(mat_wdyx[:,0]))
+        print(asd)
+
+        # 创建一个子图 
+        fig,ax = plt.subplots(figsize = (20, 10))
+ 
+        fig.subplots_adjust(bottom = 0.2)
+        #开盘,最高,最低,收盘
+        mpf.candlestick_ohlc(ax,tData_mat,width=1.2,colorup='r',colordown='green')
+        #开盘,收盘,最高,最低
+        #mpf.candlestick_ochl(ax,tData_mattData_mat,width=1.2,colorup='r',colordown='green')
+        #mpf.candlestick_ohlc(ax, tData_mat, colordown = 'green', colorup = 'red', width = 0.2, alpha = 1)
+        
+        formatter = self.MyFormatter(tData_mat[:,0])
+        ax.xaxis.set_major_formatter(formatter)
+
+        for label in ax.get_xticklabels():
+            label.set_rotation(90)
+            label.set_horizontalalignment('right')
+            
+        plt.show()
+        #plt.grid(True)
+
+        # 创建一个子图 
+        fig, ax = plt.subplots(facecolor=(0.5, 0.5, 0.5))
+        fig.subplots_adjust(bottom=0.2)
+        # 设置X轴刻度为日期时间
+        ax.xaxis_date()
+        # X轴刻度文字倾斜45度
+        plt.xticks(rotation=45)
+        plt.title("股票代码：601558两年K线图")
+        plt.xlabel("时间")
+        plt.ylabel("股价（元）")
+        #开盘,最高,最低,收盘
+        #mpf.candlestick_ohlc(ax,kData,width=1.2,colorup='r',colordown='green')
+        #开盘,收盘,最高,最低
+        #mpf.candlestick_ochl(ax,kData,width=1.2,colorup='r',colordown='green')
+        
+        plt.grid(True)
 
 if __name__ == '__main__':
 
@@ -171,14 +249,39 @@ if __name__ == '__main__':
         '2015-12-02 13:27:00',
         '2015-12-02 13:32:00'
         ])
+
     
-    #tData1 = tData[:1]
-    #print(tData1)
-    #print(tData1.open)
-    #print(tData1.open[-1])
+    Tdx = TdxData.TdxDataEngine(r'C:\Users\wenbwang\Desktop\StockData\New folder')
+    filePath = Tdx.GetTdxFileList()
+    filePath = Tdx.SearchInFileList("SH", "600000", filePath)
+    tData = Tdx.HandlerTdxDataToDataFrame(filePath)
+
+    #print(tData)
+
+    #asd = pandas.DataFrame([["2018/08/27-09:35",10.33 , 10.35 , 10.27 , 10.31 , 2151100.0  ,22191502.0]])
+    #asd.columns =  ['date','open','high','low','close','volume','Turnover']
+
+    '''
+    #asd1 = asd[:1]
+    asd1 = asd.iloc[:1]
+    print(asd1)
+    print(asd1.open)
+    print(asd1.open[0])
+
+    tData1 = tData[:1]
+    print(tData1)
+    print(tData1.open)
+    print(tData1.open[0])
+    '''
 
     T = Trend()
-    result = T.Candlestick_RemoveEmbody(tData)
-    print (result)
+    #result = T.Candlestick_RemoveEmbody(tData)
+    #print (result)
+    T.Candlestick_Drawing(tData)
 
+    #time = datetime.datetime.strptime('2018/11/08-09:51','%Y/%m/%d-%H:%M')
+    time = pandas.to_datetime('2018/11/08-09:51',format="%Y/%m/%d-%H:%M")
+    num = dates.date2num(time)
+    print(time)
+    print(num)
     print("Done")

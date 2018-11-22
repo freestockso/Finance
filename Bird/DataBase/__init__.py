@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-__all__ = ["MongoDB"]
+__all__ = ["MongoDB","TdxData"]

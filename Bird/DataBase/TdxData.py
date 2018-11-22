@@ -6,6 +6,9 @@ import re
 from Logger import Log
 from DataBase import MongoDB
 
+import numpy
+import pandas
+
 class TdxDataEngine(object):
 
     def __init__(self,FilePath):
@@ -13,7 +16,6 @@ class TdxDataEngine(object):
         self.writeLog = Log.Logger('TdxDataEngine.txt')
 
         self.DataPath = FilePath    # file path for stock data
-        self.DataItem = {}          # file list{"CategoryNames":[file paths list]}
 
         self.STR_CATEGORY = "CategoryName"
         self.STR_CONTENT = "Content"
@@ -46,10 +48,11 @@ class TdxDataEngine(object):
     # DataItem ={"CategoryNames":[file paths list], ..., "CategoryNames":[file paths list]}
     def GetTdxFileList(self):
 
+        DataItem = {}
+
         if (os.path.exists(self.DataPath) != True):
-            self.DataItem = None
             self.writeLog.log(u'Path is Invalid!')
-            return
+            return DataItem
 
         for (root, dirs, files) in os.walk(self.DataPath):
 
@@ -62,21 +65,47 @@ class TdxDataEngine(object):
                 FileList.append(CategoryPath + '\\' + ef)
 
             if len(FileList) != 0 :          
-                self.DataItem[CategoryName] = FileList
+                DataItem[CategoryName] = FileList
             else :
                 self.writeLog.log(u'File list is None')
-        return
+        return DataItem
+
+    # Search in DataItem.
+    # output will store into the dict
+    # result ={"CategoryNames":[file paths list]}
+    # sz is SH or SZ, 上海 深圳
+    # id is number of shares，股票期货代码
+    # FL_Data is file list that is dict
+    def SearchInFileList(self, sz, id, FL_Data):
+
+        if not FL_Data and isinstance(FL_Data, dict):
+            self.writeLog.log(u'File list is Invalid')
+            return
+
+        for key, value in FL_Data.items():
+
+            if not isinstance(value,list):
+                self.writeLog.log(u'Path list is Invalid')
+                return
+            
+            for path in value:
+                DataFileName = sz +'#'+ id + '.txt'
+
+                if DataFileName == path.split('\\')[-1]:
+                    return {key : [path]}
+
+        return {}
 
     # Get tdx data from the Tdx data file, file list is in DataItem. This is generator 
     # 1st return the category name, and then return the each line in turn.
     # 1st format : {"CategoryName" : Name}
     # others format :  {"Content" : lineData}
-    def GetTdxData(self):
-        if not self.DataItem:
+    def GetTdxData(self, FL_Data):
+        if not FL_Data and isinstance(FL_Data, dict):
             self.writeLog.log(u'File list is Invalid')
             return
         
-        for key, value in self.DataItem.items():
+        for key, value in FL_Data.items():
 
             if not isinstance(value,list):
                 self.writeLog.log(u'Path list is Invalid')
@@ -94,9 +123,65 @@ class TdxDataEngine(object):
                 except Exception:
                     self.writeLog.log('Failed'+path)
                     break
-    
+
     # handle tdx data from the generator from the function(GetTdxData)
-    def HandlerTdxData(self):
+    # return DataFrame 
+    def HandlerTdxDataToDataFrame(self, filePath):
+        CurData = None
+        DataType = "day"
+        AllData = []
+
+        pattHeader = re.compile(r"\d{6}") # matching file header
+        pattClass = re.compile(r"^\s{2,}") # matching data class
+        pattData = re.compile(r"\d{4}/\d{2}/\d{2}") # matching data item
+        pattFooter = re.compile(r"\D{4}:\D{3}") # matching file footer
+
+        for data in self.GetTdxData(filePath):
+            if self.STR_CATEGORY in data:
+                CurCategory = data[self.STR_CATEGORY]
+            elif self.STR_CONTENT in data:
+                CurData =  data[self.STR_CONTENT]
+                if re.match(pattHeader, CurData):
+                    continue # no need for this function
+                elif re.match(pattClass, CurData):
+                    BodyList = re.split(r'\t{1}',CurData) #split by tab
+                    if len(BodyList) == 8 and BodyList[1].strip() == '时间':
+                        DataType = "mins"
+                elif re.match(pattData, CurData):
+                    BodyList = re.split(r'\s{1}',CurData) #split by tab
+
+                    if (len(BodyList) != 7) and (len(BodyList) != 8):
+                        self.writeLog.log('DataFile Body Error : ' + CurData)
+                    
+                    if DataType == "mins":
+                        # convert to the ex : "2018/09/17-21:37"
+                        time = BodyList[1][:2] + ':' + BodyList[1][2:]
+                        BodyList.pop(1) # remove time item from the list
+                    elif DataType == "day":
+                        time = "00:00"
+                        
+                    date = BodyList[0] + '-' + time
+                    BodyList[0] = date
+
+                    for i in range(1,len(BodyList)):
+                        BodyList[i] = float(BodyList[i])
+
+                    AllData.append(BodyList)
+
+                elif re.match(pattFooter, CurData):
+                    #no need for this function
+                    continue
+                else:
+                    self.writeLog.log('Matching failed : ' + CurData)
+
+        TdxDataFrame = pandas.DataFrame(AllData)
+        TdxDataFrame.columns = ['date','open','high','low','close','volume','Turnover']
+        
+        return TdxDataFrame
+
+
+    # handle tdx data from the generator from the function(GetTdxData)
+    def HandlerTdxDataToMongodb(self, filePath):
         
         CurCategory = None
         CurData = None
@@ -108,7 +193,7 @@ class TdxDataEngine(object):
         pattData = re.compile(r"\d{4}/\d{2}/\d{2}") # matching data item
         pattFooter = re.compile(r"\D{4}:\D{3}") # matching file footer
 
-        for data in self.GetTdxData():
+        for data in self.GetTdxData(filePath):
             if self.STR_CATEGORY in data:
                 CurCategory = data[self.STR_CATEGORY]
             elif self.STR_CONTENT in data:
@@ -140,7 +225,7 @@ class TdxDataEngine(object):
                 elif re.match(pattData, CurData):
                     BodyList = re.split(r'\s{1}',CurData) #split by tab
 
-                    if (len(BodyList) != 7):
+                    if (len(BodyList) != 7) and (len(BodyList) != 8):
                         self.writeLog.log('DataFile Body Error : ' + CurData)
 
                     Body = {
@@ -175,8 +260,10 @@ class TdxDataEngine(object):
                     self.MongoHandler.dbUpdateBody('stock',CurCategory, Body, CurDoc)
 
 if __name__ == '__main__':
-    TDX_DH = TdxDataEngine(r'C:\Users\wenbwang\Desktop\StockData\IndusCategorys')
-    TDX_DH.GetTdxFileList()
-    TDX_DH.HandlerTdxData()
+    TDX_DH = TdxDataEngine(r'C:\Users\wenbwang\Desktop\StockData\New folder')
+    filePath = TDX_DH.GetTdxFileList()
+    #TDX_DH.HandlerTdxDataToMongodb(filePath)
+    filePath = TDX_DH.SearchInFileList("SH", "600000", filePath)
+    Data = TDX_DH.HandlerTdxDataToDataFrame(filePath)
+    print(Data)
     print("Done")
-    pass
