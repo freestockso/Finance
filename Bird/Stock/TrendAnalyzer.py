@@ -9,13 +9,18 @@ import matplotlib.dates as dates
 from matplotlib.ticker import Formatter
 #import datetime
 
+import sys
+sys.path.append('.\\')
+
 from Logger import Log
-#from DataBase import MongoDB
+from DataBase import MongoDB
 from DataBase import TdxData
 
 class Trend(object):
     
     def __init__(self):
+        self.SeqNum = 0
+        self.SeqDate = pandas.date_range('2000/1/1','2020/1/1', freq = '1D')
         self.writeLog = Log.Logger('TrendAnalyzer.txt')
     
     # the data format is DataFrame
@@ -26,47 +31,47 @@ class Trend(object):
         #kData[(Index-1):Index].high[-1]
         #kData[Index:(Index+1)].high[-1]
         if Index > 0:   # 此组包含数据前有其他数据，并与本组包含数据不存在包含关系。
-            if kData[Index:(Index+1)].high[-1] > kData[(Index-1):Index].high[-1]:
+            if kData[Index:(Index+1)].high.iloc[-1] > kData[(Index-1):Index].high.iloc[-1]:
                 Direction = 'up'
-            elif kData[Index:(Index+1)].low[-1] < kData[(Index-1):Index].low[-1]:
+            elif kData[Index:(Index+1)].low.iloc[-1] < kData[(Index-1):Index].low.iloc[-1]:
                 Direction = 'down'
         elif Index == 0: # 此组包含数据前无其他数据，判断方向 使用本组的前两条数据
-            if kData[(Index+1):(Index+2)].high[-1] > kData[Index:(Index+1)].high[-1]:
+            if kData[(Index+1):(Index+2)].high.iloc[-1] > kData[Index:(Index+1)].high.iloc[-1]:
                 Direction = 'up'
-            elif kData[(Index+1):(Index+2)].low[-1] < kData[Index:(Index+1)].low[-1]:
+            elif kData[(Index+1):(Index+2)].low.iloc[-1] < kData[Index:(Index+1)].low.iloc[-1]:
                 Direction = 'down'
-            elif kData[(Index+1):(Index+2)].high[-1] < kData[Index:(Index+1)].high[-1]:
+            elif kData[(Index+1):(Index+2)].high.iloc[-1] < kData[Index:(Index+1)].high.iloc[-1]:
                 Direction = 'down'
-            elif kData[(Index+1):(Index+2)].low[-1] > kData[Index:(Index+1)].low[-1]:
+            elif kData[(Index+1):(Index+2)].low.iloc[-1] > kData[Index:(Index+1)].low.iloc[-1]:
                 Direction = 'up'
             else:
                 Direction = 'up'    # it's for the same's case.
         
         tData = kData[Index:(Index+1)]
-        open = tData.open[-1]
-        close = tData.close[-1]
-        high = tData.high[-1]
-        low = tData.low[-1]
+        open = tData.open.iloc[-1]
+        close = tData.close.iloc[-1]
+        high = tData.high.iloc[-1]
+        low = tData.low.iloc[-1]
         
         if Direction == 'up':
             for i in range(Index + 1,(Index+Count)):
-                open = open if open > kData[i:(i+1)].open[-1] else kData[i:(i+1)].open[-1]
-                close = close if close > kData[i:(i+1)].close[-1] else kData[i:(i+1)].close[-1]
-                high = high if high > kData[i:(i+1)].high[-1] else kData[i:(i+1)].high[-1]
-                low = low if low > kData[i:(i+1)].low[-1] else kData[i:(i+1)].low[-1]
+                open = open if open > kData[i:(i+1)].open.iloc[-1] else kData[i:(i+1)].open.iloc[-1]
+                close = close if close > kData[i:(i+1)].close.iloc[-1] else kData[i:(i+1)].close.iloc[-1]
+                high = high if high > kData[i:(i+1)].high.iloc[-1] else kData[i:(i+1)].high.iloc[-1]
+                low = low if low > kData[i:(i+1)].low.iloc[-1] else kData[i:(i+1)].low.iloc[-1]
         elif Direction == 'down':
             for i in range(Index + 1,(Index+Count)):
-                open = open if open < kData[i:(i+1)].open[-1] else kData[i:(i+1)].open[-1]
-                close = close if close < kData[i:(i+1)].close[-1] else kData[i:(i+1)].close[-1]
-                high = high if high < kData[i:(i+1)].high[-1] else kData[i:(i+1)].high[-1]
-                low = low if low < kData[i:(i+1)].low[-1] else kData[i:(i+1)].low[-1]
+                open = open if open < kData[i:(i+1)].open.iloc[-1] else kData[i:(i+1)].open.iloc[-1]
+                close = close if close < kData[i:(i+1)].close.iloc[-1] else kData[i:(i+1)].close.iloc[-1]
+                high = high if high < kData[i:(i+1)].high.iloc[-1] else kData[i:(i+1)].high.iloc[-1]
+                low = low if low < kData[i:(i+1)].low.iloc[-1] else kData[i:(i+1)].low.iloc[-1]
         elif Direction == 'no':
             print ("ERROR : Direction is no, in Candlestick_MergeData")
 
-        tData.open[-1] = open
-        tData.close[-1] = close
-        tData.high[-1] = high
-        tData.low[-1] = low
+        tData.open.iloc[-1] = open
+        tData.close.iloc[-1] = close
+        tData.high.iloc[-1] = high
+        tData.low.iloc[-1] = low
 
         return tData
 
@@ -76,25 +81,23 @@ class Trend(object):
         rkData = pandas.DataFrame()
 
         CurData = kData[:1]
-        print(CurData) #asd
         CurCount = 1
+        LastFlag = False
         for i in range(len(kData)):
             if i != (len(kData) - 1):
                 NextData = kData[(i+1):(i+2)]
-                print(NextData) #asd
             else:
                 #最后一条数据的next data设定为无效值，不存在包含关系。
                 #当最后一条数据与之前数据不存在包含关系时，进行最后一条数据的存储
                 #当最后一条数据与之前数据存在包含关系时，进行数据的合并并存储
-                NextData = pandas.DataFrame([[]])
+                LastFlag = True
 
             #whether there is a containment relationship.
             # 前2组if语句，记录包含关系的个数
-            print(CurData.high[-1]) #asd
-            if CurData.high[-1] >= NextData.high[-1] and CurData.low[-1] <= NextData.low[-1]:
+            if LastFlag == False and CurData.high.iloc[-1] >= NextData.high.iloc[-1] and CurData.low.iloc[-1] <= NextData.low.iloc[-1]:
                 CurCount = CurCount + 1
 
-            elif CurData.high[-1] <= NextData.high[-1] and CurData.low[-1] >= NextData.low[-1]:
+            elif LastFlag == False and CurData.high.iloc[-1] <= NextData.high.iloc[-1] and CurData.low.iloc[-1] >= NextData.low.iloc[-1]:
                 CurData = NextData
                 CurCount = CurCount + 1
             else:
@@ -130,27 +133,39 @@ class Trend(object):
             #ind就是x轴的刻度数值，不是日期的下标
             return dates.num2date(ind/1440).strftime(self.fmt)
 
+    # return seqnum, seqnum + 1
+    def fSeqNum(self, DateInput):
+
+        DtIndex = self.SeqDate[self.SeqNum]
+        self.SeqNum = self.SeqNum + 1
+
+        return DtIndex
+
     # 绘制K线
     def Candlestick_Drawing(self, kData):
 
         # kData need to convert time to Pandas' format.
         tData = kData
+
         # convert data to pandas format, ignore it, for the continuesly K-line
         #tData['date'] = pandas.to_datetime(tData['date'],format = "%Y/%m/%d-%H:%M")
         #tData['date'] = tData['date'].apply(lambda x:dates.date2num(x)*1440)
+
+        # seq for data
+        self.SeqNum = 0
+        tData['date'] = tData['date'].apply(lambda x:self.fSeqNum(x))
+        tData['date'] = pandas.to_datetime(tData['date'],format = "%Y-%m-%d")
+        tData['date'] = tData['date'].apply(lambda x:dates.date2num(x))
         
         #convert to matrix
         tData_mat = tData.values
-
-        asd = range(len(mat_wdyx[:,0]))
-        print(asd)
 
         # 创建一个子图 
         fig,ax = plt.subplots(figsize = (20, 10))
  
         fig.subplots_adjust(bottom = 0.2)
         #开盘,最高,最低,收盘
-        mpf.candlestick_ohlc(ax,tData_mat,width=1.2,colorup='r',colordown='green')
+        mpf.candlestick_ohlc(ax,tData_mat,width=0.9,colorup='red',colordown='green')
         #开盘,收盘,最高,最低
         #mpf.candlestick_ochl(ax,tData_mattData_mat,width=1.2,colorup='r',colordown='green')
         #mpf.candlestick_ohlc(ax, tData_mat, colordown = 'green', colorup = 'red', width = 0.2, alpha = 1)
@@ -158,29 +173,25 @@ class Trend(object):
         formatter = self.MyFormatter(tData_mat[:,0])
         ax.xaxis.set_major_formatter(formatter)
 
+        plt.title("100000")
+        plt.xlabel("Date")
+        plt.ylabel("Price")
+
+        '''
         for label in ax.get_xticklabels():
             label.set_rotation(90)
             label.set_horizontalalignment('right')
-            
-        plt.show()
-        #plt.grid(True)
+        '''    
 
-        # 创建一个子图 
-        fig, ax = plt.subplots(facecolor=(0.5, 0.5, 0.5))
-        fig.subplots_adjust(bottom=0.2)
         # 设置X轴刻度为日期时间
         ax.xaxis_date()
         # X轴刻度文字倾斜45度
         plt.xticks(rotation=45)
-        plt.title("股票代码：601558两年K线图")
-        plt.xlabel("时间")
-        plt.ylabel("股价（元）")
-        #开盘,最高,最低,收盘
-        #mpf.candlestick_ohlc(ax,kData,width=1.2,colorup='r',colordown='green')
-        #开盘,收盘,最高,最低
-        #mpf.candlestick_ochl(ax,kData,width=1.2,colorup='r',colordown='green')
-        
-        plt.grid(True)
+
+        ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(6)) 
+            
+        plt.show()
+
 
 if __name__ == '__main__':
 
@@ -253,7 +264,7 @@ if __name__ == '__main__':
     
     Tdx = TdxData.TdxDataEngine(r'C:\Users\wenbwang\Desktop\StockData\New folder')
     filePath = Tdx.GetTdxFileList()
-    filePath = Tdx.SearchInFileList("SH", "600000", filePath)
+    filePath = Tdx.SearchInFileList("SH", "601138", filePath)
     tData = Tdx.HandlerTdxDataToDataFrame(filePath)
 
     #print(tData)
@@ -261,27 +272,38 @@ if __name__ == '__main__':
     #asd = pandas.DataFrame([["2018/08/27-09:35",10.33 , 10.35 , 10.27 , 10.31 , 2151100.0  ,22191502.0]])
     #asd.columns =  ['date','open','high','low','close','volume','Turnover']
 
-    '''
-    #asd1 = asd[:1]
-    asd1 = asd.iloc[:1]
-    print(asd1)
-    print(asd1.open)
-    print(asd1.open[0])
 
-    tData1 = tData[:1]
-    print(tData1)
-    print(tData1.open)
-    print(tData1.open[0])
-    '''
+    # #asd1 = asd[:1]
+    # asd1 = asd.iloc[:1]
+    # print(asd1)
+    # print(asd1.open)
+    # print(asd1.open[0])
+
+    # tData1 = tData[:1]
+    # print(tData1)
+    # print(tData1.open)
+    # print(tData1.open[0])
+
 
     T = Trend()
-    #result = T.Candlestick_RemoveEmbody(tData)
-    #print (result)
-    T.Candlestick_Drawing(tData)
+    result = T.Candlestick_RemoveEmbody(tData)
 
-    #time = datetime.datetime.strptime('2018/11/08-09:51','%Y/%m/%d-%H:%M')
-    time = pandas.to_datetime('2018/11/08-09:51',format="%Y/%m/%d-%H:%M")
-    num = dates.date2num(time)
-    print(time)
-    print(num)
+
+    # f1 = open(r'C:\Users\wenbwang\Desktop\1.txt','w')
+    # f2 = open(r'C:\Users\wenbwang\Desktop\2.txt','w')
+    # for i in range(len(tData)-1):
+    #     temp1 = tData[i:i+1]
+    #     print(temp1,file = f1)
+    # print(tData[i:-1],file = f1)
+    # print(len(tData))
+    # for i in range(len(result)-1):
+    #     temp1 = result[i:i+1]
+    #     print(temp1,file = f2)
+    # print(result[i:-1],file = f2)
+    # print(len(result))
+    # f1.close()
+    # f2.close()
+
+    T.Candlestick_Drawing(result)
+
     print("Done")
