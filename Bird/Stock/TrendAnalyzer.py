@@ -72,6 +72,7 @@ class Trend(object):
         tData.close.iloc[-1] = close
         tData.high.iloc[-1] = high
         tData.low.iloc[-1] = low
+        tData.date.iloc[-1] = kData[(Index+Count-1):(Index+Count)].date.iloc[-1] #使用最后的时间节点
 
         return tData
 
@@ -115,8 +116,67 @@ class Trend(object):
     
     # 在去掉包含关系后，进行分型处理：顶分型或底分型
     # 在去掉包含关系后，k线转向必有一个顶分型和一个底分型
-    def Candlestick_TypeAnalysis(self):
-        pass 
+    def Candlestick_TypeAnalysis(self, kData):
+        
+        typeDict = {}
+        i = 0
+        index = 0
+        # 基于结合律,查询所有分型，存在dict里, key is index, start by 0
+        while i < (len(kData)-2):
+            Data1 = kData[i:(i+1)]
+            Data2 = kData[(i+1):(i+2)]
+            if i == len(kData) - 2: 
+                Data3 = kData[(i+2):-1]
+            else:
+                Data3 = kData[(i+2):(i+3)]
+
+            if (Data2.iloc[-1].high > Data1.iloc[-1].high and Data2.iloc[-1].high > Data3.iloc[-1].high and
+                Data2.iloc[-1].low > Data1.iloc[-1].low and Data2.iloc[-1].low > Data3.iloc[-1].low
+                ):
+                typeDict[index] = [i+1,'G']
+                i = i + 4   # 3个K线 + 1个associative结合律
+                index = index + 1
+            elif (Data2.iloc[-1].high < Data1.iloc[-1].high and Data2.iloc[-1].high < Data3.iloc[-1].high and
+                Data2.iloc[-1].low < Data1.iloc[-1].low and Data2.iloc[-1].low < Data3.iloc[-1].low
+                ):
+                typeDict[index] = [i+1,'D']
+                i = i + 4   # 3个K线 + 1个associative结合律
+                index = index + 1
+
+            i = i + 1
+
+        #合并分型
+        i = 1 #start by 2nd
+        l = len(typeDict)
+        preType = typeDict[i-1][1]
+        preData = kData[typeDict[i-1][0]:(typeDict[i-1][0]+1)]
+
+        while i < l:
+            curType = typeDict[i][1]
+            curData = kData[typeDict[i][0]:(typeDict[i][0]+1)]
+            if preType == curType: #同分型，比较高低
+                if curType == 'G': #顶分型，比高，删除低点
+                    if preData.iloc[-1].high < curData.iloc[-1].high:
+                        typeDict.pop(i-1)
+                        preType = curType
+                        preData = curData
+                    else:
+                        typeDict.pop(i)
+                elif curType == 'D':#低分型，比低，删除高点
+                    if preData.iloc[-1].low > curData.iloc[-1].low:
+                        typeDict.pop(i-1)
+                        preType = curType
+                        preData = curData
+                    else:
+                        typeDict.pop(i)
+            elif preType != curType: #不同分型
+                preType = curType
+                preData = curData
+
+            i = i + 1
+
+        return typeDict
+
     
     #将x轴的浮点数格式化成日期小时分钟
     #默认的x轴格式化是日期被dates.date2num之后的浮点数，因为在上面乘以了1440，所以默认是错误的
@@ -264,7 +324,7 @@ if __name__ == '__main__':
     
     Tdx = TdxData.TdxDataEngine(r'C:\Users\wenbwang\Desktop\StockData\New folder')
     filePath = Tdx.GetTdxFileList()
-    filePath = Tdx.SearchInFileList("SH", "601138", filePath)
+    filePath = Tdx.SearchInFileList("SZ", "399300", filePath)
     tData = Tdx.HandlerTdxDataToDataFrame(filePath)
 
     #print(tData)
@@ -288,7 +348,6 @@ if __name__ == '__main__':
     T = Trend()
     result = T.Candlestick_RemoveEmbody(tData)
 
-
     # f1 = open(r'C:\Users\wenbwang\Desktop\1.txt','w')
     # f2 = open(r'C:\Users\wenbwang\Desktop\2.txt','w')
     # for i in range(len(tData)-1):
@@ -305,5 +364,19 @@ if __name__ == '__main__':
     # f2.close()
 
     T.Candlestick_Drawing(result)
+    typeDict = T.Candlestick_TypeAnalysis(result)
+
+    print(typeDict)
+
+    # for index, row in result.iterrows():
+    #     print(row['date'])
+
+    for key, value in typeDict.items():
+        i = 0
+        for index, row in result.iterrows():
+            if i == value[0]:
+                print(row['date'])
+                break
+            i = i + 1
 
     print("Done")
