@@ -264,7 +264,7 @@ class Trend(object):
 
 if __name__ == '__main__':
 
-    Tdx = TdxData.TdxDataEngine(r'F:\StockData')
+    Tdx = TdxData.TdxDataEngine(r'.\StockData')
     filePath = Tdx.GetTdxFileList()
     filePath = Tdx.SearchInFileList("SZ", "399300", filePath)
     tData = Tdx.HandlerTdxDataToDataFrame(filePath)
