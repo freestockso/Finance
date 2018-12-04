@@ -144,36 +144,45 @@ class Trend(object):
                 index = index + 1
 
             i = i + 1
+        
+        print(typeDict)
 
         #合并分型
         i = 1 #start by 2nd
         l = len(typeDict)
+        preKey = 0 # 记录数据的key值
         preType = typeDict[i-1][1]
         preData = kData[typeDict[i-1][0]:(typeDict[i-1][0]+1)]
 
         while i < l:
+            curKey = i #当前数据的key值
             curType = typeDict[i][1]
             curData = kData[typeDict[i][0]:(typeDict[i][0]+1)]
             if preType == curType: #同分型，比较高低
                 if curType == 'G': #顶分型，比高，删除低点
                     if preData.iloc[-1].high < curData.iloc[-1].high:
-                        typeDict.pop(i-1)
+                        typeDict.pop(preKey)
+                        preKey = curKey
                         preType = curType
                         preData = curData
                     else:
-                        typeDict.pop(i)
+                        typeDict.pop(curKey)
                 elif curType == 'D':#低分型，比低，删除高点
                     if preData.iloc[-1].low > curData.iloc[-1].low:
-                        typeDict.pop(i-1)
+                        typeDict.pop(preKey)
+                        preKey = curKey
                         preType = curType
                         preData = curData
                     else:
-                        typeDict.pop(i)
+                        typeDict.pop(curKey)
             elif preType != curType: #不同分型
+                preKey = curKey
                 preType = curType
                 preData = curData
 
             i = i + 1
+
+        print(typeDict)
 
         return typeDict
 
@@ -255,74 +264,7 @@ class Trend(object):
 
 if __name__ == '__main__':
 
-    tData = pandas.DataFrame([
-        [9.33,   9.37,  9.37, 9.32],
-        [9.37,   9.36,  9.37, 9.33],
-        [9.34,   9.36,  9.37, 9.34],
-        [9.35,   9.36,  9.36, 9.33],
-        [9.34,   9.37,  9.37, 9.33],
-        [9.37,   9.37,  9.38, 9.36],
-        [9.37,   9.41,  9.44, 9.37],
-        [9.41,   9.45,  9.46, 9.41],
-        [9.45,   9.50,  9.53, 9.44],
-        [9.51,   9.59,  9.60, 9.49],
-        [9.60,   9.66,  9.69, 9.60],
-        [9.67,   9.63,  9.71, 9.63],
-        [9.63,   9.85,  9.85, 9.62],
-        [9.82,   9.77,  9.83, 9.75],
-        [9.76,   9.69,  9.77, 9.65],
-        [9.69,   9.63,  9.71, 9.59],
-        [9.63,   9.63,  9.63, 9.51],
-        [9.62,   9.55,  9.63, 9.55],
-        [9.56,   9.63,  9.64, 9.55],
-        [9.63,   9.62,  9.63, 9.57],
-        [9.62,   9.54,  9.62, 9.54],
-        [9.54,   9.57,  9.57, 9.53],
-        [9.56,   9.58,  9.58, 9.55],
-        [9.58,   9.61,  9.62, 9.57],
-        [9.63,   9.62,  9.63, 9.57],
-        [9.61,   9.63,  9.64, 9.61],
-        [9.62,   9.62,  9.63, 9.61],
-        [9.61,   9.64,  9.64, 9.61],
-        [9.64,9.61,9.65,9.61],
-        [9.60,9.65,9.65,9.60]
-        ], 
-        columns=['open','close','high','low'], 
-        index=[
-        '2015-12-02 09:36:00',
-        '2015-12-02 09:41:00',
-        '2015-12-02 09:46:00',
-        '2015-12-02 09:51:00',
-        '2015-12-02 09:56:00',
-        '2015-12-02 10:01:00',
-        '2015-12-02 10:06:00',
-        '2015-12-02 10:11:00',
-        '2015-12-02 10:16:00',
-        '2015-12-02 10:21:00',
-        '2015-12-02 10:26:00',
-        '2015-12-02 10:31:00',
-        '2015-12-02 10:36:00',
-        '2015-12-02 10:41:00',
-        '2015-12-02 10:46:00',
-        '2015-12-02 10:51:00',
-        '2015-12-02 10:56:00',
-        '2015-12-02 11:01:00',
-        '2015-12-02 11:06:00',
-        '2015-12-02 11:11:00',
-        '2015-12-02 11:16:00',
-        '2015-12-02 11:21:00',
-        '2015-12-02 11:26:00',
-        '2015-12-02 13:02:00',
-        '2015-12-02 13:07:00',
-        '2015-12-02 13:12:00',
-        '2015-12-02 13:17:00',
-        '2015-12-02 13:22:00',
-        '2015-12-02 13:27:00',
-        '2015-12-02 13:32:00'
-        ])
-
-    
-    Tdx = TdxData.TdxDataEngine(r'C:\Users\wenbwang\Desktop\StockData\New folder')
+    Tdx = TdxData.TdxDataEngine(r'F:\StockData')
     filePath = Tdx.GetTdxFileList()
     filePath = Tdx.SearchInFileList("SZ", "399300", filePath)
     tData = Tdx.HandlerTdxDataToDataFrame(filePath)
@@ -331,19 +273,6 @@ if __name__ == '__main__':
 
     #asd = pandas.DataFrame([["2018/08/27-09:35",10.33 , 10.35 , 10.27 , 10.31 , 2151100.0  ,22191502.0]])
     #asd.columns =  ['date','open','high','low','close','volume','Turnover']
-
-
-    # #asd1 = asd[:1]
-    # asd1 = asd.iloc[:1]
-    # print(asd1)
-    # print(asd1.open)
-    # print(asd1.open[0])
-
-    # tData1 = tData[:1]
-    # print(tData1)
-    # print(tData1.open)
-    # print(tData1.open[0])
-
 
     T = Trend()
     result = T.Candlestick_RemoveEmbody(tData)
@@ -363,10 +292,8 @@ if __name__ == '__main__':
     # f1.close()
     # f2.close()
 
-    T.Candlestick_Drawing(result)
+    #T.Candlestick_Drawing(result)  # k线
     typeDict = T.Candlestick_TypeAnalysis(result)
-
-    print(typeDict)
 
     # for index, row in result.iterrows():
     #     print(row['date'])
