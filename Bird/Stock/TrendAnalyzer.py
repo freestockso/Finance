@@ -118,10 +118,19 @@ class Trend(object):
     # 在去掉包含关系后，k线转向必有一个顶分型和一个底分型
     def Candlestick_TypeAnalysis(self, kData):
         
-        typeDict = {}
         i = 0
-        index = 0
-        # 基于结合律,查询所有分型，存在dict里, key is index, start by 0
+        preType = 0
+        preHigh = 0
+        preLow = 0
+        preIndex = -5    #记录当前K线索引
+        preKey = 0
+        typeDict = {preKey:[preIndex,preType]}
+        # 查询所有分型, -1 : 底分型; 0 : 空; 1 : 顶分型。
+        # A 相同分型 取最高价或最低价
+        # B 不同分型 
+        #   1. 底分型的底最高价低于上一个顶分型的最高价，底最低价低于上一个顶最低价
+        #   2. 顶分型的顶最低价高于上一个底分型的最低价，顶最高价高于上一个底最高价
+        # C 基于结合律,顶底之间必须5根k线 （包括顶底）
         while i < (len(kData)-2):
             Data1 = kData[i:(i+1)]
             Data2 = kData[(i+1):(i+2)]
@@ -133,56 +142,71 @@ class Trend(object):
             if (Data2.iloc[-1].high > Data1.iloc[-1].high and Data2.iloc[-1].high > Data3.iloc[-1].high and
                 Data2.iloc[-1].low > Data1.iloc[-1].low and Data2.iloc[-1].low > Data3.iloc[-1].low
                 ):
-                typeDict[index] = [i+1,'G']
-                i = i + 4   # 3个K线 + 1个associative结合律
-                index = index + 1
+                # 当前数据为顶分型
+                if preType == 0 or preType == 1: #同顶分型 比较高点
+                    if Data2.iloc[-1].high < preHigh: # 当前高点低于之前高点 忽略当前分型
+                        i += 1
+                        continue
+                    elif i + 1 < preIndex + 4: #不满足结合律
+                        i += 1
+                        continue
+                    else: # 当前高点高于之前高点，满足结合律，在之前项基础上保存当前项
+                        preType = 1
+                        preHigh = Data2.iloc[-1].high
+                        preLow = Data2.iloc[-1].low
+                        preIndex = i + 1
+                        typeDict[preKey] = [i + 1, 1]
+                        i += 4
+                elif preType == -1: # 不同分型
+                    if Data2.iloc[-1].high < preHigh or Data2.iloc[-1].low < preLow: # 顶分型的顶最低价高于上一个底分型的最低价，顶最高价高于上一个底最高价
+                        i += 1
+                        continue
+                    elif i + 1 < preIndex + 4: #不满足结合律
+                        i += 1
+                        continue
+                    else:
+                        preType = 1
+                        preHigh = Data2.iloc[-1].high
+                        preLow = Data2.iloc[-1].low
+                        preIndex = i + 1
+                        preKey += 1
+                        typeDict[preKey] = [preIndex, 1] #添加新的顶分型
+                        i += 4
+
             elif (Data2.iloc[-1].high < Data1.iloc[-1].high and Data2.iloc[-1].high < Data3.iloc[-1].high and
                 Data2.iloc[-1].low < Data1.iloc[-1].low and Data2.iloc[-1].low < Data3.iloc[-1].low
                 ):
-                typeDict[index] = [i+1,'D']
-                i = i + 4   # 3个K线 + 1个associative结合律
-                index = index + 1
-
-            i = i + 1
-        
-        print(typeDict)
-
-        #合并分型
-        i = 1 #start by 2nd
-        l = len(typeDict)
-        preKey = 0 # 记录数据的key值
-        preType = typeDict[i-1][1]
-        preData = kData[typeDict[i-1][0]:(typeDict[i-1][0]+1)]
-
-        while i < l:
-            curKey = i #当前数据的key值
-            curType = typeDict[i][1]
-            curData = kData[typeDict[i][0]:(typeDict[i][0]+1)]
-            if preType == curType: #同分型，比较高低
-                if curType == 'G': #顶分型，比高，删除低点
-                    if preData.iloc[-1].high < curData.iloc[-1].high:
-                        typeDict.pop(preKey)
-                        preKey = curKey
-                        preType = curType
-                        preData = curData
+                # 当前数据为底分型
+                if preType == 0 or preType == -1: #同底分型 比较低点
+                    if Data2.iloc[-1].low > preLow: # 当前低点高于之前低点 忽略当前分型
+                        i += 1
+                        continue
+                    elif i + 1 < preIndex + 4: #不满足结合律
+                        i += 1
+                        continue
+                    else: # 当前低点低于之前低点，满足结合律，在之前项基础上保存当前项
+                        preType = -1
+                        preHigh = Data2.iloc[-1].high
+                        preLow = Data2.iloc[-1].low
+                        preIndex = i + 1
+                        typeDict[preKey] = [i + 1, -1]
+                        i += 4
+                elif preType == 1: # 不同分型
+                    if Data2.iloc[-1].high > preHigh or Data2.iloc[-1].low > preLow: # 底分型的底最高价低于上一个顶分型的最高价，底最低价低于上一个顶最低价
+                        i += 1
+                        continue
+                    elif i + 1 < preIndex + 4: #不满足结合律
+                        i += 1
+                        continue
                     else:
-                        typeDict.pop(curKey)
-                elif curType == 'D':#低分型，比低，删除高点
-                    if preData.iloc[-1].low > curData.iloc[-1].low:
-                        typeDict.pop(preKey)
-                        preKey = curKey
-                        preType = curType
-                        preData = curData
-                    else:
-                        typeDict.pop(curKey)
-            elif preType != curType: #不同分型
-                preKey = curKey
-                preType = curType
-                preData = curData
-
-            i = i + 1
-
-        print(typeDict)
+                        preType = -1
+                        preHigh = Data2.iloc[-1].high
+                        preLow = Data2.iloc[-1].low
+                        preIndex = i + 1
+                        preKey += 1
+                        typeDict[preKey] = [preIndex, -1] #添加新的顶分型
+                        i += 4
+            i += 1
 
         return typeDict
 
@@ -294,6 +318,7 @@ if __name__ == '__main__':
 
     #T.Candlestick_Drawing(result)  # k线
     typeDict = T.Candlestick_TypeAnalysis(result)
+    print(typeDict)
 
     # for index, row in result.iterrows():
     #     print(row['date'])
