@@ -24,7 +24,7 @@ class Trend(object):
         self.writeLog = Log.Logger('TrendAnalyzer.txt')
     
     # the data format is DataFrame
-    def Candlestick_MergeData(self, kData, Index, Count):
+    def Candlestick_MergeDataSetMode(self, kData, Index, Count):
 
         # 设定方向，向上 or 向下
         Direction = 'no'
@@ -78,7 +78,8 @@ class Trend(object):
 
     # kData store K data, format is DataFrame
     # rkData store the result after the RemoveEmbody
-    def Candlestick_RemoveEmbody(self, kData):
+    # 包含关系 统计处理（合并后的时间节点 可能有问题, 当前dataframe数据为引用设置，会改变原始值）
+    def Candlestick_RemoveEmbodySetMode(self, kData):
         rkData = pandas.DataFrame()
 
         CurData = kData[:1]
@@ -90,7 +91,7 @@ class Trend(object):
             else:
                 #最后一条数据的next data设定为无效值，不存在包含关系。
                 #当最后一条数据与之前数据不存在包含关系时，进行最后一条数据的存储
-                #当最后一条数据与之前数据存在包含关系时，进行数据的合并并存储
+                #当最后一条数据与之前数据存在包含关系时，进行数据的合并并存储 
                 LastFlag = True
 
             #whether there is a containment relationship.
@@ -104,7 +105,7 @@ class Trend(object):
             else:
                 # 当组数据存在包含关系时，CurCount > 1， 合并数据 并存储。
                 if CurCount > 1:
-                    tData = self.Candlestick_MergeData(kData, (i + 1 - CurCount), CurCount)
+                    tData = self.Candlestick_MergeDataSetMode(kData, (i + 1 - CurCount), CurCount)
                     CurCount = 1
                 # 在当前数据不存在包含关系时，CurCount = 1，直接存储    
                 else:    
@@ -113,7 +114,81 @@ class Trend(object):
                 rkData = pandas.concat([rkData,tData],axis = 0)
         
         return rkData
-    
+
+    # kData store K data, format is DataFrame
+    # rkData store the result after the RemoveEmbody
+    # 按时间顺序比较包含关系，两两比较，包含关系没有传递性。
+    def Candlestick_RemoveEmbodySeqMode(self, kData):
+        rkData = pandas.DataFrame()
+
+        contain = 0
+        tempH1 = 0
+        tempH2 = 0
+        tempL1 = 0
+        tempL2 = 0
+
+        MergeData = pandas.DataFrame()  #合并后数据
+        PreData = pandas.DataFrame()    #前一个数据
+        CurData = pandas.DataFrame()    #当前数据
+        NextData = pandas.DataFrame()   #下一个数据
+
+        for i in range(len(kData)-1):
+            if contain == 0:
+                CurData = kData[i:i+1]     #当前数据
+            else:
+                contain = 0
+                CurData = MergeData     #当前数据
+
+            NextData = kData[i+1:i+2]   #后一个数据
+
+            #whether there is a containment relationship.
+            # 前2组if语句，记录包含关系的个数
+            if (CurData.high.iloc[-1] >= NextData.high.iloc[-1] and CurData.low.iloc[-1] <= NextData.low.iloc[-1]):
+                contain = 1 #第一根包含第二根
+            elif (CurData.high.iloc[-1] <= NextData.high.iloc[-1] and CurData.low.iloc[-1] >= NextData.low.iloc[-1]):
+                contain = 2 #第二根包含第一根
+            
+            if contain == 0:
+                rkData = pandas.concat([rkData,CurData],axis = 0)
+                PreData = CurData
+            else:
+                if contain == 1:
+                    MergeData = CurData.copy(deep = True)
+                elif contain == 2:
+                    MergeData = NextData.copy(deep = True)
+
+                if PreData.empty == True:
+                    tempH1 = CurData.high.iloc[-1]
+                    tempH2 = NextData.high.iloc[-1]
+                    tempL1 = CurData.low.iloc[-1] 
+                    tempL2 = NextData.low.iloc[-1]
+                else:
+                    tempH1 = PreData.high.iloc[-1]
+                    tempH2 = CurData.high.iloc[-1]
+                    tempL1 = PreData.low.iloc[-1] 
+                    tempL2 = CurData.low.iloc[-1]
+
+                if tempH1 < tempH2:
+                    MergeData.open.iloc[-1] = CurData.open.iloc[-1] if CurData.open.iloc[-1] > NextData.open.iloc[-1] else NextData.open.iloc[-1]
+                    MergeData.close.iloc[-1] = CurData.close.iloc[-1] if CurData.close.iloc[-1] > NextData.close.iloc[-1] else NextData.close.iloc[-1]
+                    MergeData.high.iloc[-1] = CurData.high.iloc[-1] if CurData.high.iloc[-1] > NextData.high.iloc[-1] else NextData.high.iloc[-1]
+                    MergeData.low.iloc[-1] = CurData.low.iloc[-1] if CurData.low.iloc[-1] > NextData.low.iloc[-1] else NextData.low.iloc[-1]
+                elif tempL1 > tempL2:
+                    MergeData.open.iloc[-1] = CurData.open.iloc[-1] if CurData.open.iloc[-1] < NextData.open.iloc[-1] else NextData.open.iloc[-1]
+                    MergeData.close.iloc[-1] = CurData.close.iloc[-1] if CurData.close.iloc[-1] < NextData.close.iloc[-1] else NextData.close.iloc[-1]
+                    MergeData.high.iloc[-1] = CurData.high.iloc[-1] if CurData.high.iloc[-1] < NextData.high.iloc[-1] else NextData.high.iloc[-1]
+                    MergeData.low.iloc[-1] = CurData.low.iloc[-1] if CurData.low.iloc[-1] < NextData.low.iloc[-1] else NextData.low.iloc[-1]
+                else:
+                    print ("ERROR : Direction is no, in Candlestick_MergeData")
+
+        # 加载最后一条数据,无包含关系连接最后一条数据，有包含关系连接合并数据
+        if contain == 0:
+            rkData = pandas.concat([rkData,NextData],axis = 0)
+        else:
+            rkData = pandas.concat([rkData,MergeData],axis = 0)            
+        
+        return rkData
+
     # 在去掉包含关系后，进行分型处理：顶分型或底分型
     # 在去掉包含关系后，k线转向必有一个顶分型和一个底分型
     def Candlestick_TypeAnalysis(self, kData):
@@ -134,29 +209,25 @@ class Trend(object):
         while i < (len(kData)-2):
             Data1 = kData[i:(i+1)]
             Data2 = kData[(i+1):(i+2)]
-            if i == len(kData) - 2: 
-                Data3 = kData[(i+2):-1]
-            else:
-                Data3 = kData[(i+2):(i+3)]
+            Data3 = kData[(i+2):(i+3)]
 
             if (Data2.iloc[-1].high > Data1.iloc[-1].high and Data2.iloc[-1].high > Data3.iloc[-1].high and
                 Data2.iloc[-1].low > Data1.iloc[-1].low and Data2.iloc[-1].low > Data3.iloc[-1].low
                 ):
                 # 当前数据为顶分型
+                # print('G')
+                print(Data2.iloc[-1].date)
                 if preType == 0 or preType == 1: #同顶分型 比较高点
                     if Data2.iloc[-1].high < preHigh: # 当前高点低于之前高点 忽略当前分型
                         i += 1
                         continue
-                    elif i + 1 < preIndex + 4: #不满足结合律
-                        i += 1
-                        continue
-                    else: # 当前高点高于之前高点，满足结合律，在之前项基础上保存当前项
+                    else: # 当前高点高于之前高点，“不需要”满足结合律，在之前项基础上保存当前项
                         preType = 1
                         preHigh = Data2.iloc[-1].high
                         preLow = Data2.iloc[-1].low
                         preIndex = i + 1
-                        typeDict[preKey] = [i + 1, 1]
-                        i += 4
+                        typeDict[preKey] = [i + 1, 1] # 更新当前顶分型
+                        i += 1
                 elif preType == -1: # 不同分型
                     if Data2.iloc[-1].high < preHigh or Data2.iloc[-1].low < preLow: # 顶分型的顶最低价高于上一个底分型的最低价，顶最高价高于上一个底最高价
                         i += 1
@@ -164,33 +235,32 @@ class Trend(object):
                     elif i + 1 < preIndex + 4: #不满足结合律
                         i += 1
                         continue
-                    else:
+                    else: #把当前数据赋值给之前数据，添加当前数据为新的顶分型
                         preType = 1
                         preHigh = Data2.iloc[-1].high
                         preLow = Data2.iloc[-1].low
                         preIndex = i + 1
                         preKey += 1
-                        typeDict[preKey] = [preIndex, 1] #添加新的顶分型
-                        i += 4
+                        typeDict[preKey] = [preIndex, preType] 
+                        i += 1
 
             elif (Data2.iloc[-1].high < Data1.iloc[-1].high and Data2.iloc[-1].high < Data3.iloc[-1].high and
                 Data2.iloc[-1].low < Data1.iloc[-1].low and Data2.iloc[-1].low < Data3.iloc[-1].low
                 ):
                 # 当前数据为底分型
+                # print('D')
+                print(Data2.iloc[-1].date)
                 if preType == 0 or preType == -1: #同底分型 比较低点
                     if Data2.iloc[-1].low > preLow: # 当前低点高于之前低点 忽略当前分型
                         i += 1
                         continue
-                    elif i + 1 < preIndex + 4: #不满足结合律
-                        i += 1
-                        continue
-                    else: # 当前低点低于之前低点，满足结合律，在之前项基础上保存当前项
+                    else: # 当前低点低于之前低点，“不需要”满足结合律，在之前项基础上保存当前项
                         preType = -1
                         preHigh = Data2.iloc[-1].high
                         preLow = Data2.iloc[-1].low
                         preIndex = i + 1
-                        typeDict[preKey] = [i + 1, -1]
-                        i += 4
+                        typeDict[preKey] = [i + 1, -1] #更新当前底分型
+                        i += 1
                 elif preType == 1: # 不同分型
                     if Data2.iloc[-1].high > preHigh or Data2.iloc[-1].low > preLow: # 底分型的底最高价低于上一个顶分型的最高价，底最低价低于上一个顶最低价
                         i += 1
@@ -198,14 +268,14 @@ class Trend(object):
                     elif i + 1 < preIndex + 4: #不满足结合律
                         i += 1
                         continue
-                    else:
+                    else: # 把当前数据赋值给之前数据，添加当前数据为新的底分型
                         preType = -1
                         preHigh = Data2.iloc[-1].high
                         preLow = Data2.iloc[-1].low
                         preIndex = i + 1
                         preKey += 1
-                        typeDict[preKey] = [preIndex, -1] #添加新的顶分型
-                        i += 4
+                        typeDict[preKey] = [preIndex, preType]
+                        i += 1
             i += 1
 
         return typeDict
@@ -299,30 +369,31 @@ if __name__ == '__main__':
     #asd.columns =  ['date','open','high','low','close','volume','Turnover']
 
     T = Trend()
-    result = T.Candlestick_RemoveEmbody(tData)
+    #result = T.Candlestick_RemoveEmbodySetMode(tData)
+    result = T.Candlestick_RemoveEmbodySeqMode(tData)
+    #print(result)
 
-    # f1 = open(r'C:\Users\wenbwang\Desktop\1.txt','w')
-    # f2 = open(r'C:\Users\wenbwang\Desktop\2.txt','w')
-    # for i in range(len(tData)-1):
+    # f1 = open(r'C:\Users\LL\Desktop\1.txt','w')
+    # f2 = open(r'C:\Users\LL\Desktop\2.txt','w')
+    # for i in range(len(tData)):
     #     temp1 = tData[i:i+1]
     #     print(temp1,file = f1)
-    # print(tData[i:-1],file = f1)
     # print(len(tData))
-    # for i in range(len(result)-1):
+    # for i in range(len(result)):
     #     temp1 = result[i:i+1]
     #     print(temp1,file = f2)
-    # print(result[i:-1],file = f2)
     # print(len(result))
     # f1.close()
     # f2.close()
 
-    #T.Candlestick_Drawing(result)  # k线
+    # # k线
+    # T.Candlestick_Drawing(result)
+
+    # 分析分型
     typeDict = T.Candlestick_TypeAnalysis(result)
     print(typeDict)
 
-    # for index, row in result.iterrows():
-    #     print(row['date'])
-
+    # 输出分型
     for key, value in typeDict.items():
         i = 0
         for index, row in result.iterrows():
