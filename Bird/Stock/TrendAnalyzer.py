@@ -215,8 +215,6 @@ class Trend(object):
                 Data2.iloc[-1].low > Data1.iloc[-1].low and Data2.iloc[-1].low > Data3.iloc[-1].low
                 ):
                 # 当前数据为顶分型
-                # print('G')
-                print(Data2.iloc[-1].date)
                 if preType == 0 or preType == 1: #同顶分型 比较高点
                     if Data2.iloc[-1].high < preHigh: # 当前高点低于之前高点 忽略当前分型
                         i += 1
@@ -248,8 +246,6 @@ class Trend(object):
                 Data2.iloc[-1].low < Data1.iloc[-1].low and Data2.iloc[-1].low < Data3.iloc[-1].low
                 ):
                 # 当前数据为底分型
-                # print('D')
-                print(Data2.iloc[-1].date)
                 if preType == 0 or preType == -1: #同底分型 比较低点
                     if Data2.iloc[-1].low > preLow: # 当前低点高于之前低点 忽略当前分型
                         i += 1
@@ -391,7 +387,7 @@ if __name__ == '__main__':
 
     # 分析分型
     typeDict = T.Candlestick_TypeAnalysis(result)
-    print(typeDict)
+    #print(typeDict)
 
     # 输出分型
     for key, value in typeDict.items():
