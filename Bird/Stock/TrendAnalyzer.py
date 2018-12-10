@@ -356,8 +356,8 @@ if __name__ == '__main__':
 
     Tdx = TdxData.TdxDataEngine(r'.\StockData')
     filePath = Tdx.GetTdxFileList()
-    filePath = Tdx.SearchInFileList("SZ", "399300", filePath)
-    tData = Tdx.HandlerTdxDataToDataFrame(filePath)
+    filePath = Tdx.SearchInFileList("SH", "999999", filePath)
+    tData = Tdx.HandlerTdxDataToDataFrame(filePath,'2008/09/01-00:00','2009/03/01-00:00')
 
     #print(tData)
 
@@ -369,18 +369,18 @@ if __name__ == '__main__':
     result = T.Candlestick_RemoveEmbodySeqMode(tData)
     #print(result)
 
-    # f1 = open(r'C:\Users\LL\Desktop\1.txt','w')
-    # f2 = open(r'C:\Users\LL\Desktop\2.txt','w')
-    # for i in range(len(tData)):
-    #     temp1 = tData[i:i+1]
-    #     print(temp1,file = f1)
-    # print(len(tData))
-    # for i in range(len(result)):
-    #     temp1 = result[i:i+1]
-    #     print(temp1,file = f2)
-    # print(len(result))
-    # f1.close()
-    # f2.close()
+    f1 = open(r'C:\Users\LL\Desktop\1.txt','w')
+    f2 = open(r'C:\Users\LL\Desktop\2.txt','w')
+    for i in range(len(tData)):
+        temp1 = tData[i:i+1]
+        print(temp1,file = f1)
+    print(len(tData))
+    for i in range(len(result)):
+        temp1 = result[i:i+1]
+        print(temp1,file = f2)
+    print(len(result))
+    f1.close()
+    f2.close()
 
     # # k线
     # T.Candlestick_Drawing(result)

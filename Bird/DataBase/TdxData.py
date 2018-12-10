@@ -5,6 +5,7 @@ import os
 import re
 from Logger import Log
 from DataBase import MongoDB
+import datetime
 
 import numpy
 import pandas
@@ -125,8 +126,9 @@ class TdxDataEngine(object):
                     break
 
     # handle tdx data from the generator from the function(GetTdxData)
+    # date format: '2018/09/17-21:37'
     # return DataFrame 
-    def HandlerTdxDataToDataFrame(self, filePath):
+    def HandlerTdxDataToDataFrame(self, filePath, start = '1990/01/01-00:00', end = '2100/01/01-00:00'):
         CurData = None
         DataType = "day"
         AllData = []
@@ -148,7 +150,7 @@ class TdxDataEngine(object):
                     if len(BodyList) == 8 and BodyList[1].strip() == '时间':
                         DataType = "mins"
                 elif re.match(pattData, CurData):
-                    BodyList = re.split(r'\s{1}',CurData) #split by tab
+                    BodyList = re.split(r'\s{1}',CurData) #split by space
 
                     if (len(BodyList) != 7) and (len(BodyList) != 8):
                         self.writeLog.log('DataFile Body Error : ' + CurData)
@@ -161,6 +163,14 @@ class TdxDataEngine(object):
                         time = "00:00"
                         
                     date = BodyList[0] + '-' + time
+
+                    cDate = datetime.datetime.strptime(date, '%Y/%m/%d-%H:%M')
+                    sDate = datetime.datetime.strptime(start, '%Y/%m/%d-%H:%M')
+                    eDate = datetime.datetime.strptime(end, '%Y/%m/%d-%H:%M')
+
+                    if cDate < sDate or cDate > eDate:
+                        continue
+
                     BodyList[0] = date
 
                     for i in range(1,len(BodyList)):
