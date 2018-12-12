@@ -36,13 +36,15 @@ class Trend(object):
             return pData
 
         rDataList = []
+        key = ''
+        value =''
         for dictData in DataList:
-            key = dictData.items()[0]
-            value = dictData.items()[1]
+            for key,value in dictData.items(): # 获取 key & value
+                pass
 
             tDataList = []
             for time in TimeList:
-                for i in len(value):
+                for i in range(len(value)):
                     if time == value[i][OFFSET_DATE]: # 以时间索引查找数据，记录当前日和上一日的收盘价，无上一日时 以当前日存储。每个日期存储2个数据。
                         if i > 0 :
                             tDataList.append(value[i][OFFSET_CLOSE])
@@ -50,7 +52,7 @@ class Trend(object):
                             tDataList.append(value[i-1][OFFSET_CLOSE])
                         tDataList.append(value[i][OFFSET_CLOSE])
             tRangeList = []
-            for i in (len(TimeList)-1): # 涨跌幅=(现价-上一个交易日收盘价)/上一个交易日收盘价*100%
+            for i in range(len(TimeList)-1): # 涨跌幅=(现价-上一个交易日收盘价)/上一个交易日收盘价*100%
                 rVal = '%.2f%%' % (((tDataList[i*2+3] - tDataList[i*2])/tDataList[i*2]) * 100)    #小数点保留2位, 转百分数
                 tRangeList.append(rVal)
             
@@ -389,11 +391,11 @@ class Trend(object):
 
 if __name__ == '__main__':
 
-    startTime = '2008/09/01-00:00'
-    endTime = '2009/03/01-00:00'
-    DataPath = r'F:\StockData'
-    ID_ZS_SH = '999999'
-    NAME_ZS_SH = '上证指数'
+    startTime = '2018/01/01-00:00'
+    endTime = '2018/12/12-00:00'
+    DataPath = r'.\StockData'
+    ID_ZS_SH = '399300'
+    NAME_ZS_SH = '沪深300'
     ID_BK = 'Categorys'
 
     Tdx = TdxData.TdxDataEngine(DataPath)
@@ -443,5 +445,7 @@ if __name__ == '__main__':
             i = i + 1
     
     T.calcPriceRange(Data_BK, typeTimeList)
+
+    print(typeTimeList)
 
     print("Done")
