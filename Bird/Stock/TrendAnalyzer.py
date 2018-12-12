@@ -7,7 +7,7 @@ import mpl_finance as mpf
 import matplotlib.pyplot as plt
 import matplotlib.dates as dates
 from matplotlib.ticker import Formatter
-#import datetime
+import datetime
 
 import sys
 sys.path.append('.\\')
@@ -22,6 +22,41 @@ class Trend(object):
         self.SeqNum = 0
         self.SeqDate = pandas.date_range('2000/1/1','2020/1/1', freq = '1D')
         self.writeLog = Log.Logger('TrendAnalyzer.txt')
+
+    # 涨跌幅=(现价-上一个交易日收盘价)/上一个交易日收盘价*100%
+    # DataList is the dict list, [{item:[data]], data's format is list: "日期 开盘 最高 最低 收盘 成交量 成交额"
+    # TimeList is list, ['2008/09/01-00:00','2008/09/01-00:00','2008/09/01-00:00']
+    def calcPriceRange(self, DataList, TimeList):
+
+        OFFSET_DATE = 0
+        OFFSET_CLOSE = 4
+        pData = pandas.DataFrame()
+        
+        if len(TimeList) < 2:
+            return pData
+
+        rDataList = []
+        for dictData in DataList:
+            key = dictData.items()[0]
+            value = dictData.items()[1]
+
+            tDataList = []
+            for time in TimeList:
+                for i in len(value):
+                    if time == value[i][OFFSET_DATE]: # 以时间索引查找数据，记录当前日和上一日的收盘价，无上一日时 以当前日存储。每个日期存储2个数据。
+                        if i > 0 :
+                            tDataList.append(value[i][OFFSET_CLOSE])
+                        else:
+                            tDataList.append(value[i-1][OFFSET_CLOSE])
+                        tDataList.append(value[i][OFFSET_CLOSE])
+            tRangeList = []
+            for i in (len(TimeList)-1): # 涨跌幅=(现价-上一个交易日收盘价)/上一个交易日收盘价*100%
+                rVal = '%.2f%%' % (((tDataList[i*2+3] - tDataList[i*2])/tDataList[i*2]) * 100)    #小数点保留2位, 转百分数
+                tRangeList.append(rVal)
+            
+            rDataList.append({key:tRangeList})
+        
+        print(rDataList)
     
     # the data format is DataFrame
     def Candlestick_MergeDataSetMode(self, kData, Index, Count):
@@ -354,48 +389,59 @@ class Trend(object):
 
 if __name__ == '__main__':
 
-    Tdx = TdxData.TdxDataEngine(r'.\StockData')
-    filePath = Tdx.GetTdxFileList()
-    filePath = Tdx.SearchInFileList("SH", "999999", filePath)
-    tData = Tdx.HandlerTdxDataToDataFrame(filePath,'2008/09/01-00:00','2009/03/01-00:00')
+    startTime = '2008/09/01-00:00'
+    endTime = '2009/03/01-00:00'
+    DataPath = r'F:\StockData'
+    ID_ZS_SH = '999999'
+    NAME_ZS_SH = '上证指数'
+    ID_BK = 'Categorys'
 
-    #print(tData)
+    Tdx = TdxData.TdxDataEngine(DataPath)
+    filePath = Tdx.GetTdxFileList()
+    File_SH = Tdx.SearchInFileList(filePath,'',ID_ZS_SH)
+    File_BK = Tdx.SearchInFileList(filePath,ID_BK, '')
+    Data_SH = Tdx.HandlerTdxDataToList(File_SH,startTime,endTime)
+    Data_BK = Tdx.HandlerTdxDataToList(File_BK,startTime,endTime)
+
+    tData = pandas.DataFrame(Data_SH[0][NAME_ZS_SH])
+    tData.columns = ['date','open','high','low','close','volume','Turnover']
 
     #asd = pandas.DataFrame([["2018/08/27-09:35",10.33 , 10.35 , 10.27 , 10.31 , 2151100.0  ,22191502.0]])
     #asd.columns =  ['date','open','high','low','close','volume','Turnover']
 
     T = Trend()
-    #result = T.Candlestick_RemoveEmbodySetMode(tData)
-    result = T.Candlestick_RemoveEmbodySeqMode(tData)
-    #print(result)
+    #tData_RE = T.Candlestick_RemoveEmbodySetMode(tData)
+    tData_RE = T.Candlestick_RemoveEmbodySeqMode(tData)
 
-    f1 = open(r'C:\Users\LL\Desktop\1.txt','w')
-    f2 = open(r'C:\Users\LL\Desktop\2.txt','w')
-    for i in range(len(tData)):
-        temp1 = tData[i:i+1]
-        print(temp1,file = f1)
-    print(len(tData))
-    for i in range(len(result)):
-        temp1 = result[i:i+1]
-        print(temp1,file = f2)
-    print(len(result))
-    f1.close()
-    f2.close()
+    # f1 = open(r'C:\Users\LL\Desktop\1.txt','w')
+    # f2 = open(r'C:\Users\LL\Desktop\2.txt','w')
+    # for i in range(len(tData)):
+    #     temp1 = tData[i:i+1]
+    #     print(temp1,file = f1)
+    # print(len(tData))
+    # for i in range(len(tData_RE)):
+    #     temp1 = tData_RE[i:i+1]
+    #     print(temp1,file = f2)
+    # print(len(tData_RE))
+    # f1.close()
+    # f2.close()
 
     # # k线
-    # T.Candlestick_Drawing(result)
+    # T.Candlestick_Drawing(tData_RE)
 
     # 分析分型
-    typeDict = T.Candlestick_TypeAnalysis(result)
-    #print(typeDict)
+    typeDict = T.Candlestick_TypeAnalysis(tData_RE)
 
-    # 输出分型
+    # 在分型基础上，输出时间
+    typeTimeList = []
     for key, value in typeDict.items():
         i = 0
-        for index, row in result.iterrows():
+        for index, row in tData_RE.iterrows():
             if i == value[0]:
-                print(row['date'])
+                typeTimeList.append(row['date'])
                 break
             i = i + 1
+    
+    T.calcPriceRange(Data_BK, typeTimeList)
 
     print("Done")

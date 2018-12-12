@@ -7,9 +7,6 @@ from Logger import Log
 from DataBase import MongoDB
 import datetime
 
-import numpy
-import pandas
-
 class TdxDataEngine(object):
 
     def __init__(self,FilePath):
@@ -74,14 +71,21 @@ class TdxDataEngine(object):
     # Search in DataItem.
     # output will store into the dict
     # result ={"CategoryNames":[file paths list]}
-    # sz is SH or SZ, 上海 深圳
     # id is number of shares，股票期货代码
     # FL_Data is file list that is dict
-    def SearchInFileList(self, sz, id, FL_Data):
+    # search by category or id
+    def SearchInFileList(self, FL_Data, category = '', id = ''):
 
         if not FL_Data and isinstance(FL_Data, dict):
             self.writeLog.log(u'File list is Invalid')
             return
+
+        patternID = re.compile(r'\d{6}')    # 删除无效ID名
+        if re.match(patternID, id) == None:
+            id = '#'    #invalid id， search by category
+        
+        reID = '#'+ id
+        patternID = re.compile(reID) # (r'#\d{6}') search "file name"
 
         for key, value in FL_Data.items():
 
@@ -89,10 +93,14 @@ class TdxDataEngine(object):
                 self.writeLog.log(u'Path list is Invalid')
                 return
             
+            if id == '#': # search by category
+                if key == category:
+                    return {key : value}
+                else:
+                    continue
+            
             for path in value:
-                DataFileName = sz +'#'+ id + '.txt'
-
-                if DataFileName == path.split('\\')[-1]:
+                if re.search(patternID, path):
                     return {key : [path]}
 
         return {}
@@ -128,9 +136,11 @@ class TdxDataEngine(object):
     # handle tdx data from the generator from the function(GetTdxData)
     # date format: '2018/09/17-21:37'
     # return DataFrame 
-    def HandlerTdxDataToDataFrame(self, filePath, start = '1990/01/01-00:00', end = '2100/01/01-00:00'):
+    def HandlerTdxDataToList(self, filePath, start = '1990/01/01-00:00', end = '2100/01/01-00:00'):
         CurData = None
         DataType = "day"
+        curItem = ''
+        DataList = []
         AllData = []
 
         pattHeader = re.compile(r"\d{6}") # matching file header
@@ -144,7 +154,8 @@ class TdxDataEngine(object):
             elif self.STR_CONTENT in data:
                 CurData =  data[self.STR_CONTENT]
                 if re.match(pattHeader, CurData):
-                    continue # no need for this function
+                    HeaderList = re.split(r'\s{1}',CurData) #split by space
+                    curItem = HeaderList[1]
                 elif re.match(pattClass, CurData):
                     BodyList = re.split(r'\t{1}',CurData) #split by tab
                     if len(BodyList) == 8 and BodyList[1].strip() == '时间':
@@ -176,19 +187,17 @@ class TdxDataEngine(object):
                     for i in range(1,len(BodyList)):
                         BodyList[i] = float(BodyList[i])
 
-                    AllData.append(BodyList)
+                    DataList.append(BodyList)
 
                 elif re.match(pattFooter, CurData):
-                    #no need for this function
+                    AllData.append({curItem : DataList})
+                    DataList = []
+                    curItem = ''
                     continue
                 else:
                     self.writeLog.log('Matching failed : ' + CurData)
-
-        TdxDataFrame = pandas.DataFrame(AllData)
-        TdxDataFrame.columns = ['date','open','high','low','close','volume','Turnover']
         
-        return TdxDataFrame
-
+        return AllData
 
     # handle tdx data from the generator from the function(GetTdxData)
     def HandlerTdxDataToMongodb(self, filePath):
