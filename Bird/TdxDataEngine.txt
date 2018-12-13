@@ -83,3 +83,13 @@
 2018-12-12 14:45:43,605 - Logger.Log - INFO - MongoDB连接成功
 2018-12-12 16:33:31,998 - Logger.Log - INFO - MongoDB连接成功
 2018-12-12 16:38:47,308 - Logger.Log - INFO - MongoDB连接成功
+2018-12-13 09:08:35,056 - Logger.Log - INFO - MongoDB连接成功
+2018-12-13 09:16:33,699 - Logger.Log - INFO - MongoDB连接成功
+2018-12-13 09:46:26,499 - Logger.Log - INFO - MongoDB连接成功
+2018-12-13 10:00:56,351 - Logger.Log - INFO - MongoDB连接成功
+2018-12-13 10:07:14,541 - Logger.Log - INFO - MongoDB连接成功
+2018-12-13 10:37:00,614 - Logger.Log - INFO - MongoDB连接成功
+2018-12-13 14:28:11,354 - Logger.Log - INFO - MongoDB连接成功
+2018-12-13 14:30:20,678 - Logger.Log - INFO - MongoDB连接成功
+2018-12-13 16:24:51,716 - Logger.Log - INFO - MongoDB连接成功
+2018-12-13 16:53:54,880 - Logger.Log - INFO - MongoDB连接成功

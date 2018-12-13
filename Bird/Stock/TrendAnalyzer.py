@@ -26,6 +26,7 @@ class Trend(object):
     # 涨跌幅=(现价-上一个交易日收盘价)/上一个交易日收盘价*100%
     # DataList is the dict list, [{item:[data]], data's format is list: "日期 开盘 最高 最低 收盘 成交量 成交额"
     # TimeList is list, ['2008/09/01-00:00','2008/09/01-00:00','2008/09/01-00:00']
+    # return result : [{'煤炭': ['-9.82%', '4.96%', '-0.86%', '3.08%', '-0.06%', '7.16%', '-3.95%', '6.71%', '0.01%', '0.69%', '-6.46%', '2.03%', '1.15%']}]
     def calcPriceRange(self, DataList, TimeList):
 
         OFFSET_DATE = 0
@@ -47,18 +48,18 @@ class Trend(object):
                 for i in range(len(value)):
                     if time == value[i][OFFSET_DATE]: # 以时间索引查找数据，记录当前日和上一日的收盘价，无上一日时 以当前日存储。每个日期存储2个数据。
                         if i > 0 :
-                            tDataList.append(value[i][OFFSET_CLOSE])
-                        else:
                             tDataList.append(value[i-1][OFFSET_CLOSE])
+                        else:
+                            tDataList.append(value[i][OFFSET_CLOSE])
                         tDataList.append(value[i][OFFSET_CLOSE])
             tRangeList = []
             for i in range(len(TimeList)-1): # 涨跌幅=(现价-上一个交易日收盘价)/上一个交易日收盘价*100%
-                rVal = '%.2f%%' % (((tDataList[i*2+3] - tDataList[i*2])/tDataList[i*2]) * 100)    #小数点保留2位, 转百分数
-                tRangeList.append(rVal)
+                rVal = '%.2f' % (((tDataList[i*2+3] - tDataList[i*2])/tDataList[i*2]) * 100)    #小数点保留2位,    "转百分数'%.2f%%'"
+                tRangeList.append(float(rVal))
             
             rDataList.append({key:tRangeList})
         
-        print(rDataList)
+        return rDataList
     
     # the data format is DataFrame
     def Candlestick_MergeDataSetMode(self, kData, Index, Count):
@@ -310,8 +311,18 @@ class Trend(object):
                         typeDict[preKey] = [preIndex, preType]
                         i += 1
             i += 1
+        
+        # 在分型基础上，输出时间
+        typeTimeList = []
+        for key, value in typeDict.items():
+            i = 0
+            for index, row in kData.iterrows():
+                if i == value[0]:
+                    typeTimeList.append(row['date'])
+                    break
+                i = i + 1
 
-        return typeDict
+        return typeTimeList
 
     
     #将x轴的浮点数格式化成日期小时分钟
@@ -388,10 +399,16 @@ class Trend(object):
             
         plt.show()
 
+    # 股票数据格式转换，2维列表到dataframe， 列默认为：['date','open','high','low','close','volume','Turnover']
+    def StockDataList2DataFrame(self,dList):
+        pData = pandas.DataFrame(dList)
+        pData.columns = ['date','open','high','low','close','volume','Turnover']
+        return pData
+
 
 if __name__ == '__main__':
 
-    startTime = '2018/01/01-00:00'
+    startTime = '2018/06/01-00:00'
     endTime = '2018/12/12-00:00'
     DataPath = r'.\StockData'
     ID_ZS_SH = '399300'
@@ -405,13 +422,12 @@ if __name__ == '__main__':
     Data_SH = Tdx.HandlerTdxDataToList(File_SH,startTime,endTime)
     Data_BK = Tdx.HandlerTdxDataToList(File_BK,startTime,endTime)
 
-    tData = pandas.DataFrame(Data_SH[0][NAME_ZS_SH])
-    tData.columns = ['date','open','high','low','close','volume','Turnover']
-
     #asd = pandas.DataFrame([["2018/08/27-09:35",10.33 , 10.35 , 10.27 , 10.31 , 2151100.0  ,22191502.0]])
     #asd.columns =  ['date','open','high','low','close','volume','Turnover']
 
     T = Trend()
+    tData = T.StockDataList2DataFrame(Data_SH[0][NAME_ZS_SH])
+
     #tData_RE = T.Candlestick_RemoveEmbodySetMode(tData)
     tData_RE = T.Candlestick_RemoveEmbodySeqMode(tData)
 
@@ -431,19 +447,9 @@ if __name__ == '__main__':
     # # k线
     # T.Candlestick_Drawing(tData_RE)
 
-    # 分析分型
-    typeDict = T.Candlestick_TypeAnalysis(tData_RE)
+    # 分析分型， 返回分型 顶底时间列表
+    typeTimeList = T.Candlestick_TypeAnalysis(tData_RE)
 
-    # 在分型基础上，输出时间
-    typeTimeList = []
-    for key, value in typeDict.items():
-        i = 0
-        for index, row in tData_RE.iterrows():
-            if i == value[0]:
-                typeTimeList.append(row['date'])
-                break
-            i = i + 1
-    
     T.calcPriceRange(Data_BK, typeTimeList)
 
     print(typeTimeList)
