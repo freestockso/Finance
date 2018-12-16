@@ -229,7 +229,9 @@ class Trend(object):
 
     # 在去掉包含关系后，进行分型处理：顶分型或底分型
     # 在去掉包含关系后，k线转向必有一个顶分型和一个底分型
-    def Candlestick_TypeAnalysis(self, kData):
+    # the result is time list, that is point to G and D
+    # mode is true, append start & end time to the result, false is no need.
+    def Candlestick_TypeAnalysis(self, kData, Mode = False):
         
         i = 0
         preType = 0
@@ -311,16 +313,28 @@ class Trend(object):
                         typeDict[preKey] = [preIndex, preType]
                         i += 1
             i += 1
-        
+
         # 在分型基础上，输出时间
+        # typeDict 格式： {key:{index, type}}  key为搜索时的索引值从0开始，+1；index为kData第几个数据项（行）从0开始，type表示 顶底
         typeTimeList = []
         for key, value in typeDict.items():
-            i = 0
-            for index, row in kData.iterrows():
-                if i == value[0]:
-                    typeTimeList.append(row['date'])
-                    break
-                i = i + 1
+            typeTimeList.append(value)
+        if Mode == True and len(typeTimeList) > 0:
+            if (typeTimeList[0][0] != 0): #第一个数据kData索引不是0时，添加kData第一个数据
+                typeTimeList.insert(0,[0,0]) # kData 第一个数据索引为0，分型为空
+            if (typeTimeList[len(typeTimeList)-1][0] != (len(kData)-1)): #最一个数据kData索引不是kData最后一个数据项时，添加kData最后一个数据
+                typeTimeList.append([(len(kData)-1),0]) # kData 最后一个数据索引为0，分型为空
+
+        for item in typeTimeList:
+            row = item[0]
+            item[0] = kData.iloc[[row]].iloc[-1].date
+
+            # i = 0
+            # for index, row in kData.iterrows():
+            #     if i == value[0]:
+            #         typeTimeList.append(row['date'])
+            #         break
+            #     i = i + 1
 
         return typeTimeList
 
@@ -450,8 +464,12 @@ if __name__ == '__main__':
     # 分析分型， 返回分型 顶底时间列表
     typeTimeList = T.Candlestick_TypeAnalysis(tData_RE)
 
-    T.calcPriceRange(Data_BK, typeTimeList)
+    TimeList = []
+    for item in typeTimeList:
+        TimeList.append(item[0])
 
-    print(typeTimeList)
+    T.calcPriceRange(Data_BK, TimeList)
+
+    print(TimeList)
 
     print("Done")

@@ -10,7 +10,7 @@ def addBeginEndToTimeList(Begin, End, TimeList):
         TimeList.append(End)
 
 def main():
-    startTime = '2018/12/01-00:00'
+    startTime = '2018/09/01-00:00'
     endTime = '2018/12/14-00:00'
     DataPath = r'.\StockData'
     ID_ZS_SH = '399300'
@@ -33,14 +33,15 @@ def main():
     # # k线
     # T.Candlestick_Drawing(tData_RE)
 
-    # 分析分型， 返回分型 顶底时间列表
-    typeTimeList = T.Candlestick_TypeAnalysis(tData_RE)
-    addBeginEndToTimeList(startTime, endTime, typeTimeList)
+    # 分析分型， 返回分型 顶底时间列表, 返回结果为2维数组
+    typeTimeList = T.Candlestick_TypeAnalysis(tData_RE,True)
 
-    print(typeTimeList)
+    TimeList = []
+    for item in typeTimeList:
+        TimeList.append(item[0])
 
-    listRange = T.calcPriceRange(Data_BK, typeTimeList)     # 按时间轴，计算数据波段涨幅
-    ExpModule.FormatData2TXT(typeTimeList,listRange)        # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
+    listRange = T.calcPriceRange(Data_BK, TimeList)     # 按时间轴，计算数据波段涨幅
+    ExpModule.FormatData2TXT(TimeList,listRange)        # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
 
 if __name__ == '__main__':
     main()
