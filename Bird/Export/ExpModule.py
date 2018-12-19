@@ -86,20 +86,52 @@ def exportXls_CategorysTrend(CateData, TimeRange, fileName = None):
 
     # f.save('demo1.xls') #保存文件
 
+# 0|399300|20180926|1.000
+def FormatData2TXTForTDX(TimeTypeList,CODE,ID):
+    f = open('.\\Export\\dataTdx.txt', 'w')
+    for i in range(len(TimeTypeList)):
+        tTime = datetime.datetime.strptime(TimeTypeList[i][0], '%Y/%m/%d-%H:%M')
+        tDate = tTime.strftime('%Y%m%d')
+        tType = TimeTypeList[i][1]
+        tStr = CODE +'|' + ID + '|' + tDate  + '|' + ('%.3f' % tType) + '\n'
+        f.writelines(tStr)
+    f.close
 
-def FormatData2TXT(TimeRange,CateData):
-    index = 1
-    preSeg = 0
-    timeFlagList = []   #存储波段时间戳，转换规则如下。最后一个时间戳 为无效值。 波段数 = 时间数 - 1
-    for time in TimeRange: #转换时间为 索引值，月份加当前月份波段号， 801， 8月份第一个波段
-        T_std = datetime.datetime.strptime(time, '%Y/%m/%d-%H:%M')
-        if preSeg == T_std.month:
-            index += 1
+# xRangeNum 整合数据后 从后向前保留波段数。
+def FormatData2TXT(TimeTypeList,CateData,xRangeNum = 1000):
+    timeFlagList = []   #存储波段时间戳，转换规则如下。最后一个时间戳 为无效值。 20180131-20180228, 转换后0131-0228。
+    typeFlagList = []   #存储分型
+    for i in range(len(TimeTypeList)-1): 
+        if (TimeTypeList[i+1][1] == 1):     # 顶分型
+            cType = '+'
+        elif (TimeTypeList[i+1][1] == -1):  # 底分型
+            cType = '-'
+        elif(TimeTypeList[i+1][1] == 0):    # 无分型 一般为数据开始或结束波段
+            cType = '*'
+        elif(TimeTypeList[i+1][1] == 2):    # 无分型 一般为数据开始或结束波段
+            cType = '#1'
+        elif(TimeTypeList[i+1][1] == 3):    # 无分型 一般为数据开始或结束波段
+            cType = '#2'
         else:
-            preSeg = T_std.month
-            index = 1
-        timeFlagList.append(T_std.month * 100 + index)
-    timeFlagList.pop(0) # 删除最后一个无效的时间戳
+            cType = 'Error'
+        typeFlagList.append(cType)
+
+        if cType == '#1':
+            timeFlagList.append("当前所有波段涨跌幅度")
+        elif cType == '#2':
+            timeFlagList.append("数据起始日至第一个波段涨跌幅度")
+        else:
+            time1 = TimeTypeList[i][0]
+            time2 = TimeTypeList[i+1][0]
+            T_std1 = datetime.datetime.strptime(time1, '%Y/%m/%d-%H:%M')
+            T_std2 = datetime.datetime.strptime(time2, '%Y/%m/%d-%H:%M')
+
+            timeFlagList.append(str(T_std1.month * 100 + T_std1.day) + '-' + str(T_std2.month * 100 + T_std2.day))
+
+    rangeNum = len(TimeTypeList) - 1
+    startRange = 0
+    if (xRangeNum < rangeNum):
+        startRange = rangeNum - xRangeNum
     
     # 以波段为基础，整合板块数据，降序排列
     AllData = []
@@ -115,15 +147,16 @@ def FormatData2TXT(TimeRange,CateData):
 
     # 写入时间戳
     strTime = ''
-    for time in timeFlagList:
-        strTime += ' ' + '\t' + str(time) + '\t\t'
+    for i in range(startRange, rangeNum):
+        strTime += timeFlagList[i] + '\t' + typeFlagList[i] + '\t\t'
     strTime += '\n'
     f.writelines(strTime)
 
     # 写入数据
     for i in range(len(CateData)):
         strData = ''
-        for dList in AllData:
+        for j in range(startRange, rangeNum):
+            dList = AllData[j]
             strData += dList[i][0] + '\t'
             strData += str(dList[i][1]) + '\t\t'
         strData += '\n'    
@@ -133,7 +166,7 @@ def FormatData2TXT(TimeRange,CateData):
 
 if __name__ == '__main__':
 
-    time = ['2018/06/07-00:00', '2018/07/06-00:00', '2018/07/24-00:00', '2018/08/20-00:00', '2018/09/04-00:00', '2018/09/13-00:00', '2018/09/26-00:00', '2018/10/19-00:00', '2018/11/02-00:00', '2018/11/12-00:00', '2018/11/19-00:00', '2018/11/27-00:00', '2018/12/03-00:00', '2018/12/10-00:00']
+    time = [['2018/06/07-00:00',0],['2018/07/06-00:00',1],['2018/07/24-00:00',-1],['2018/08/20-00:00',1],['2018/09/04-00:00',-1],['2018/09/13-00:00',1],['2018/09/26-00:00',-1],['2018/10/19-00:00',1],['2018/11/02-00:00',-1],['2018/11/12-00:00',1],['2018/11/19-00:00',-1],['2018/11/27-00:00',1],['2018/12/03-00:00',-1],['2018/12/10-00:00',0]]  
     data = [{'煤炭': [-9.82, 4.96, -0.86, 3.08, -0.06, 7.16, -3.95, 6.71, 0.01, 0.69, -6.46, 2.03, 1.15]},
             {'电力': [-7.95, 6.1, -3.83, 1.76, 0.25, 2.74, -8.65, 5.59, 1.51, 4.51, -3.87, 2.93, 1.12]},
             {'石油': [-6.04, 2.73, 6.08,4.85, 4.67, 8.82, -6.19, 0.22, -0.66, -1.1, -4.25, 2.67, 0.35]},
@@ -192,5 +225,6 @@ if __name__ == '__main__':
             {'综合类': [-14.16, 3.63, -6.09, -3.42, -2.93, 1.93, -17.86, 11.09, 10.21, 10.84, -7.45, 3.72, -1.36]}]
 
     #exportXls_CategorysTrend(data,time)
-    FormatData2TXT(time,data)
+    #FormatData2TXT(time,data)
+    FormatData2TXT(time,data,12)
 

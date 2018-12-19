@@ -22,16 +22,63 @@ class Trend(object):
         self.SeqNum = 0
         self.SeqDate = pandas.date_range('2000/1/1','2020/1/1', freq = '1D')
         self.writeLog = Log.Logger('TrendAnalyzer.txt')
+    
+    def cPrint(self, Content):
+        #print(Content)
+        pass
+    
+    # its parameters is based on the result of calcPriceRange.
+    # 根据rangenum数（波段数） ，以此为节点统计 波段涨幅。 
+    # 此函数会改变 rDataList 和 TimeTypeList， 增加2组 波段涨幅 （第一组为后数第RangeNum个波段到数据最后波段，第二组为数据开始到后数第RangeNum-1个波段）
+    # 返回波段数+2，因为增加2波数据
+    def calcPriceXRange(self, rDataList, TimeTypeList, RangeNum):
+        totalRangeNum = len(TimeTypeList) - 1
+        preRangeNum = 0
+        if totalRangeNum > RangeNum:
+            preRangeNum = totalRangeNum - RangeNum
+        else:
+            RangeNum = totalRangeNum
+
+        time1 = TimeTypeList[preRangeNum][0] #第一组数据的开始时间。
+        type1 = 2                            #第一组数据的类型 不是顶分 不是底分 不是空，2为特殊类型。
+        TimeTypeList.append([time1,type1])
+
+        if (preRangeNum > 0):
+            time2 = TimeTypeList[0][0]           #第二组数据的开始时间。
+            type2 = 3                            #第二组数据的类型 不是顶分 不是底分 不是空，2为特殊类型。
+            TimeTypeList.append([time2,type2])
+
+        for rData in rDataList:
+            for key, value in rData.items():
+                # 为每个数据列表 添加第一组数据 （后数第RangeNum个波段到数据最后波段） 涨幅和
+                rangeVal = 0
+                for i in range(preRangeNum,len(value)):
+                    rangeVal += value[i]
+                value.append(float('%.2f' % rangeVal))
+
+                # 为每个数据列表 添加第二组数据 （数据开始到后数第RangeNum-1个波段） 涨幅和
+                rangeVal = 0
+                if (preRangeNum > 0):
+                    for i in range(preRangeNum):
+                        rangeVal += value[i]
+                    value.append(float('%.2f' % rangeVal))
+
+        return (RangeNum + 2)
 
     # 涨跌幅=(现价-上一个交易日收盘价)/上一个交易日收盘价*100%
     # DataList is the dict list, [{item:[data]], data's format is list: "日期 开盘 最高 最低 收盘 成交量 成交额"
     # TimeList is list, ['2008/09/01-00:00','2008/09/01-00:00','2008/09/01-00:00']
     # return result : [{'煤炭': ['-9.82%', '4.96%', '-0.86%', '3.08%', '-0.06%', '7.16%', '-3.95%', '6.71%', '0.01%', '0.69%', '-6.46%', '2.03%', '1.15%']}]
-    def calcPriceRange(self, DataList, TimeList):
+    def calcPriceRange(self, DataList, TimeTypeList):
 
         OFFSET_DATE = 0
         OFFSET_CLOSE = 4
         pData = pandas.DataFrame()
+
+        # 从list里面获取时间节点，组装成新的时间list使用
+        TimeList = []
+        for item in TimeTypeList:
+            TimeList.append(item[0])
         
         if len(TimeList) < 2:
             return pData
@@ -246,6 +293,7 @@ class Trend(object):
         #   1. 底分型的底最高价低于上一个顶分型的最高价，底最低价低于上一个顶最低价
         #   2. 顶分型的顶最低价高于上一个底分型的最低价，顶最高价高于上一个底最高价
         # C 基于结合律,顶底之间必须5根k线 （包括顶底）
+
         while i < (len(kData)-2):
             Data1 = kData[i:(i+1)]
             Data2 = kData[(i+1):(i+2)]
@@ -258,6 +306,8 @@ class Trend(object):
                 if preType == 0 or preType == 1: #同顶分型 比较高点
                     if Data2.iloc[-1].high < preHigh: # 当前高点低于之前高点 忽略当前分型
                         i += 1
+                        self.cPrint("同顶分型 比较高点, 当前高点低于之前高点 忽略当前分型")
+                        self.cPrint(Data2)
                         continue
                     else: # 当前高点高于之前高点，“不需要”满足结合律，在之前项基础上保存当前项
                         preType = 1
@@ -269,8 +319,12 @@ class Trend(object):
                 elif preType == -1: # 不同分型
                     if Data2.iloc[-1].high < preHigh or Data2.iloc[-1].low < preLow: # 顶分型的顶最低价高于上一个底分型的最低价，顶最高价高于上一个底最高价
                         i += 1
+                        self.cPrint("顶分型 分型的顶最低价高于上一个底分型的最低价，顶最高价高于上一个底最高价")
+                        self.cPrint(Data2)
                         continue
                     elif i + 1 < preIndex + 4: #不满足结合律
+                        self.cPrint("顶分型 不满足结合律")
+                        self.cPrint(Data2)
                         i += 1
                         continue
                     else: #把当前数据赋值给之前数据，添加当前数据为新的顶分型
@@ -288,6 +342,8 @@ class Trend(object):
                 # 当前数据为底分型
                 if preType == 0 or preType == -1: #同底分型 比较低点
                     if Data2.iloc[-1].low > preLow: # 当前低点高于之前低点 忽略当前分型
+                        self.cPrint("同底分型 比较低点 当前低点高于之前低点 忽略当前分型")
+                        self.cPrint(Data2)
                         i += 1
                         continue
                     else: # 当前低点低于之前低点，“不需要”满足结合律，在之前项基础上保存当前项
@@ -299,9 +355,13 @@ class Trend(object):
                         i += 1
                 elif preType == 1: # 不同分型
                     if Data2.iloc[-1].high > preHigh or Data2.iloc[-1].low > preLow: # 底分型的底最高价低于上一个顶分型的最高价，底最低价低于上一个顶最低价
+                        self.cPrint("#底分型的底最高价低于上一个顶分型的最高价，底最低价低于上一个顶最低价")
+                        self.cPrint(Data2)
                         i += 1
                         continue
                     elif i + 1 < preIndex + 4: #不满足结合律
+                        self.cPrint("底分型 不满足结合律")
+                        self.cPrint(Data2)
                         i += 1
                         continue
                     else: # 把当前数据赋值给之前数据，添加当前数据为新的底分型

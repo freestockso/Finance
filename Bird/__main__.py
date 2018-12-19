@@ -2,20 +2,15 @@ from Export import ExpModule
 from Stock import TrendAnalyzer
 from DataBase import TdxData
 
-
-def addBeginEndToTimeList(Begin, End, TimeList):
-    if Begin != TimeList[0]:
-        TimeList.insert(0, Begin)
-    if End != TimeList[-1]:
-        TimeList.append(End)
-
 def main():
-    startTime = '2018/09/01-00:00'
-    endTime = '2018/12/14-00:00'
-    DataPath = r'.\StockData'
-    ID_ZS_SH = '399300'
-    NAME_ZS_SH = '沪深300'
-    ID_BK = 'Categorys'
+    startTime = '2018/01/01-00:00'  # 数据开始波段
+    endTime = '2018/12/18-00:00'    # 数据结束波段
+    DataPath = r'.\StockData'       # 数据路径
+    ID_ZS_CODE = '0'                # 标的指数，沪 = 1； 深 = 0
+    ID_ZS_SH = '399300'             # 标的指数，以此划分波段
+    NAME_ZS_SH = '沪深300'          # 标的指数名称
+    ID_BK = 'Categorys'             # 分析目标数据文件夹名
+    RangeNum = 8                    # 输出波段数                 
 
     # 获取数据
     Tdx = TdxData.TdxDataEngine(DataPath)
@@ -35,13 +30,13 @@ def main():
 
     # 分析分型， 返回分型 顶底时间列表, 返回结果为2维数组
     typeTimeList = T.Candlestick_TypeAnalysis(tData_RE,True)
+    ExpModule.FormatData2TXTForTDX(typeTimeList,ID_ZS_CODE,ID_ZS_SH)   # 分型处理后，把结果输出到txt，导入tdx 显示分型标识
 
-    TimeList = []
-    for item in typeTimeList:
-        TimeList.append(item[0])
+    listRange = T.calcPriceRange(Data_BK, typeTimeList)     # 按时间轴，计算数据波段涨幅
+    RangeNum = T.calcPriceXRange(listRange, typeTimeList,RangeNum)     # 按时间轴，计算数据波段涨幅,  结果会存储在 listRange 和 typeTimeList，添加1-2组数据。
 
-    listRange = T.calcPriceRange(Data_BK, TimeList)     # 按时间轴，计算数据波段涨幅
-    ExpModule.FormatData2TXT(TimeList,listRange)        # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
-
+    #ExpModule.FormatData2TXT(typeTimeList,listRange)        # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
+    ExpModule.FormatData2TXT(typeTimeList,listRange,RangeNum)        # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
+    
 if __name__ == '__main__':
     main()
