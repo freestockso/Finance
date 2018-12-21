@@ -1,0 +1,13 @@
+
+
+[分型显示](#1)
+
+
+<h1 id="1">分型显示</h1>
+
+```
+TYPE1:=SIGNALS_USER(6,0);
+DRAWICON(TYPE1>0,HIGH+50,1); 
+DRAWICON(TYPE1<0,LOW,2); 
+DRAWICON(TYPE1=0,LOW,11); 
+```

@@ -26,44 +26,97 @@ class Trend(object):
     def cPrint(self, Content):
         #print(Content)
         pass
+
+
+    def cutTimeRange(self, TimeTypeList, sTime, eTime):
+        sIndex = 0
+        sFlag = 0
+        eIndex = 0
+        
+        sDate = datetime.datetime.strptime(sTime, '%Y/%m/%d-%H:%M')
+        eDate = datetime.datetime.strptime(eTime, '%Y/%m/%d-%H:%M')
+
+        for i in range(1,len(TimeTypeList)):
+            cDate = datetime.datetime.strptime(TimeTypeList[i][0], '%Y/%m/%d-%H:%M')
+            if sIndex == 0 and sFlag == 0 and cDate >= sDate:
+                sIndex = i - 1
+                sFlag = 0xFF # 设定为无效值 避免2次进入
+            if eIndex == 0 and cDate >= eDate:
+                eIndex = i
+
+        return TimeTypeList[sIndex:(eIndex+1)]
+
     
     # its parameters is based on the result of calcPriceRange.
-    # 根据rangenum数（波段数） ，以此为节点统计 波段涨幅。 
+    # 根据rangenum数（波段数） ，以此为节点统计 波段涨幅。 涨幅相加。
     # 此函数会改变 rDataList 和 TimeTypeList， 增加2组 波段涨幅 （第一组为后数第RangeNum个波段到数据最后波段，第二组为数据开始到后数第RangeNum-1个波段）
     # 返回波段数+2，因为增加2波数据
-    def calcPriceXRange(self, rDataList, TimeTypeList, RangeNum):
+    def calcPriceXRange(self, rDataList, TimeTypeList, RangeNum, DataList):
         totalRangeNum = len(TimeTypeList) - 1
         preRangeNum = 0
         if totalRangeNum > RangeNum:
             preRangeNum = totalRangeNum - RangeNum
         else:
             RangeNum = totalRangeNum
+        
+        Temp_TimeTypeList = []
+        Temp_TimeTypeList.append(TimeTypeList[0])
+        if preRangeNum > 0:
+            Temp_TimeTypeList.append([TimeTypeList[preRangeNum][0],2])
+        Temp_TimeTypeList.append([TimeTypeList[-1][0],3])
 
-        time1 = TimeTypeList[preRangeNum][0] #第一组数据的开始时间。
-        type1 = 2                            #第一组数据的类型 不是顶分 不是底分 不是空，2为特殊类型。
-        TimeTypeList.append([time1,type1])
+        Temp_listRange = self.calcPriceRange(DataList, Temp_TimeTypeList)
 
-        if (preRangeNum > 0):
-            time2 = TimeTypeList[0][0]           #第二组数据的开始时间。
-            type2 = 3                            #第二组数据的类型 不是顶分 不是底分 不是空，2为特殊类型。
-            TimeTypeList.append([time2,type2])
+        Temp_TimeTypeList.pop(0) # 删除第一个时间节点，然后添加到 主 timetypelist里面去
+        TimeTypeList += Temp_TimeTypeList
 
-        for rData in rDataList:
-            for key, value in rData.items():
-                # 为每个数据列表 添加第一组数据 （后数第RangeNum个波段到数据最后波段） 涨幅和
-                rangeVal = 0
-                for i in range(preRangeNum,len(value)):
-                    rangeVal += value[i]
-                value.append(float('%.2f' % rangeVal))
-
-                # 为每个数据列表 添加第二组数据 （数据开始到后数第RangeNum-1个波段） 涨幅和
-                rangeVal = 0
-                if (preRangeNum > 0):
-                    for i in range(preRangeNum):
-                        rangeVal += value[i]
-                    value.append(float('%.2f' % rangeVal))
+        for i in range(len(rDataList)):
+            for key in rDataList[i]:
+                if Temp_listRange[i].get(key):
+                    rDataList[i][key] += Temp_listRange[i][key]
+                else:
+                    print("Error:数据类型不匹配。")
 
         return (RangeNum + 2)
+    
+    
+    # # its parameters is based on the result of calcPriceRange.
+    # # 根据rangenum数（波段数） ，以此为节点统计 波段涨幅。 涨幅相加。
+    # # 此函数会改变 rDataList 和 TimeTypeList， 增加2组 波段涨幅 （第一组为后数第RangeNum个波段到数据最后波段，第二组为数据开始到后数第RangeNum-1个波段）
+    # # 返回波段数+2，因为增加2波数据
+    # def calcPriceXRange(self, rDataList, TimeTypeList, RangeNum):
+    #     totalRangeNum = len(TimeTypeList) - 1
+    #     preRangeNum = 0
+    #     if totalRangeNum > RangeNum:
+    #         preRangeNum = totalRangeNum - RangeNum
+    #     else:
+    #         RangeNum = totalRangeNum
+
+    #     time1 = TimeTypeList[preRangeNum][0] #第一组数据的开始时间。
+    #     type1 = 2                            #第一组数据的类型 不是顶分 不是底分 不是空，2为特殊类型。
+    #     TimeTypeList.append([time1,type1])
+
+    #     if (preRangeNum > 0):
+    #         time2 = TimeTypeList[0][0]           #第二组数据的开始时间。
+    #         type2 = 3                            #第二组数据的类型 不是顶分 不是底分 不是空，2为特殊类型。
+    #         TimeTypeList.append([time2,type2])
+
+    #     for rData in rDataList:
+    #         for key, value in rData.items():
+    #             # 为每个数据列表 添加第一组数据 （后数第RangeNum个波段到数据最后波段） 涨幅和
+    #             rangeVal = 0
+    #             for i in range(preRangeNum,len(value)):
+    #                 rangeVal += value[i]
+    #             value.append(float('%.2f' % rangeVal))
+
+    #             # 为每个数据列表 添加第二组数据 （数据开始到后数第RangeNum-1个波段） 涨幅和
+    #             rangeVal = 0
+    #             if (preRangeNum > 0):
+    #                 for i in range(preRangeNum):
+    #                     rangeVal += value[i]
+    #                 value.append(float('%.2f' % rangeVal))
+
+    #     return (RangeNum + 2)
 
     # 涨跌幅=(现价-上一个交易日收盘价)/上一个交易日收盘价*100%
     # DataList is the dict list, [{item:[data]], data's format is list: "日期 开盘 最高 最低 收盘 成交量 成交额"

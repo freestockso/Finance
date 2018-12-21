@@ -108,18 +108,18 @@ def FormatData2TXT(TimeTypeList,CateData,xRangeNum = 1000):
             cType = '-'
         elif(TimeTypeList[i+1][1] == 0):    # 无分型 一般为数据开始或结束波段
             cType = '*'
-        elif(TimeTypeList[i+1][1] == 2):    # 无分型 一般为数据开始或结束波段
+        elif(TimeTypeList[i+1][1] == 2):    # 无分型 数据起始日至第一个波段涨跌幅度
             cType = '#1'
-        elif(TimeTypeList[i+1][1] == 3):    # 无分型 一般为数据开始或结束波段
+        elif(TimeTypeList[i+1][1] == 3):    # 无分型 当前所有波段涨跌幅度
             cType = '#2'
         else:
             cType = 'Error'
         typeFlagList.append(cType)
 
         if cType == '#1':
-            timeFlagList.append("当前所有波段涨跌幅度")
-        elif cType == '#2':
             timeFlagList.append("数据起始日至第一个波段涨跌幅度")
+        elif cType == '#2':
+            timeFlagList.append("当前所有波段涨跌幅度")
         else:
             time1 = TimeTypeList[i][0]
             time2 = TimeTypeList[i+1][0]
