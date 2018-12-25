@@ -87,6 +87,17 @@ def exportXls_CategorysTrend(CateData, TimeRange, fileName = None):
     # f.save('demo1.xls') #保存文件
 
 # 0|399300|20180926|1.000
+def ExpTypingToTdx(TimeTypeList,CODE,ID,Expfile):
+    f = open(Expfile, 'w')
+    for i in range(len(TimeTypeList)):
+        tTime = datetime.datetime.strptime(TimeTypeList[i][0], '%Y/%m/%d-%H:%M')
+        tDate = tTime.strftime('%Y%m%d')
+        tType = TimeTypeList[i][1]
+        tStr = CODE +'|' + ID + '|' + tDate  + '|' + ('%.3f' % tType) + '\n'
+        f.writelines(tStr)
+    f.close
+
+# 0|399300|20180926|1.000
 def FormatData2TXTForTDX(TimeTypeList,CODE,ID):
     f = open('.\\Export\\dataTdx.txt', 'w')
     for i in range(len(TimeTypeList)):

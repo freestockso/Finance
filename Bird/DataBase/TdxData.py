@@ -135,7 +135,7 @@ class TdxDataEngine(object):
 
     # handle tdx data from the generator from the function(GetTdxData)
     # date format: '2018/09/17-21:37'
-    # return DataFrame 
+    # return [{key1:[[data1],[data2],[datan]]},{key2:[[data1],[data2],[datan]]}]
     def HandlerTdxDataToList(self, filePath, start = '1990/01/01-00:00', end = '2100/01/01-00:00'):
         CurData = None
         DataType = "day"

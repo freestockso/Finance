@@ -1,11 +1,88 @@
 import sys
 import datetime
+import json
 import pickle
 
 from Export import ExpModule
 from Stock import TrendAnalyzer
 from DataBase import TdxData
 from Logger import Log
+
+def BatchProcessing(f_JSON, NeedToTyping = True):
+    CMD_TYPING = 'cmd_typing'     # 批量处理数据分型
+    CMD_DATA = 'cmd_data'       # 批量处理数据分析，需以分型为基础。
+    ExpPath = ".//Export//"             # 输出文件路径
+    # 创建分析对象
+    T = TrendAnalyzer.Trend()
+
+    with open(f_JSON, "r", encoding='utf-8') as f:
+        BatCMD = json.load(f)
+    
+    if NeedToTyping == True:
+        CmdList = BatCMD[CMD_TYPING]
+        for cmd in CmdList:
+            StoreData = []                      # 把当前数据存储到硬盘上
+            StartTime = cmd["StartTime"]        # 数据时间范围，起始时间
+            EndTime = cmd["EndTime"]            # 数据时间范围，终止时间，None 表示当前时间
+            DataPath = cmd["DataPath"]          # 标的数据路径
+            TRADE_CODE = cmd['TRADE_CODE']      # 标的数据交易所代码，沪 = 1； 深 = 0
+            ID_CODE = cmd['ID_CODE']            # 标的数据代码
+            ID_NAME = cmd['ID_NAME']            # 标的数据名称
+
+            FidData = ExpPath + "Typing" + ID_CODE + '.txt'     # 给通达信分型显示使用的数据
+            FidPKL = ExpPath + "Typing" + ID_CODE + '.pkl'      # 存储分型结果和数据列表
+            
+            if EndTime == "None":
+                EndTime = datetime.datetime.now().strftime('%Y/%m/%d-%H:%M')
+            # 数据源初始化
+            DataBase = TdxData.TdxDataEngine(DataPath)
+            # 获取当前路径下所有文件路径列表
+            FilePathList = DataBase.GetTdxFileList()
+            # 获取标的数据文件路径
+            FilePath = DataBase.SearchInFileList(FilePathList,'',ID_CODE)
+            # 在标的数据文件中获取数据,[{key1:[[data1],[data2],[datan]]},{key2:[[data1],[data2],[datan]]}]
+            DataList = DataBase.HandlerTdxDataToList(FilePath,StartTime, EndTime)
+            # 分析标的数据，将2维数组转化成dataframe
+            DataFrame = T.StockDataList2DataFrame(DataList[0][ID_NAME])
+            # 基于缠论，标的数据去掉包含关系。
+            RE_DataFrame = T.Candlestick_RemoveEmbodySeqMode(DataFrame)
+            # 基于缠论分析标的数据顶底分型， 返回分型 顶底时间列表, 返回结果为2维数组
+            TimeTypeList = T.Candlestick_TypeAnalysis(RE_DataFrame,True)
+            # 分型处理后，把结果输出到txt，导入tdx 显示分型标识
+            ExpModule.ExpTypingToTdx(TimeTypeList,ID_CODE,TRADE_CODE,FidData)
+            # 将时间波段分型结果 和 数据列表 输出到文件中。
+            StoreData.append(TimeTypeList)
+            StoreData.append(DataList)
+            f = open(FidPKL,'wb')
+            pickle.dump(StoreData,f)
+            f.close()
+
+    # 数据波段输出
+    CmdList = BatCMD[CMD_DATA]
+    for cmd in CmdList:
+        StartTime = cmd["StartTime"]        # 数据时间范围，起始时间
+        EndTime = cmd["EndTime"]            # 数据时间范围，终止时间，None 表示当前时间
+        DataPath = cmd["DataPath"]          # 标的数据路径
+        ID_CODE = cmd['ID_CODE']            # 标的数据代码
+        RangeNum = cmd['RangeNum']          # 波段数
+    
+        # 获取指定标的，分型数据及数据列表
+        FidPKL = ExpPath + "Typing" + ID_CODE + '.pkl'      # 存储分型结果和数据列表
+        f = open(FidPKL,'rb')
+        TypingData = pickle.load(f)
+        f.close()
+
+        cTimeTypeList = T.cutTimeRange(typeTimeList,startTime,endTime)
+        # 数据源初始化
+        Tdx = TdxData.TdxDataEngine(DataPath)
+        filePath = Tdx.GetTdxFileList()
+        # 获取指标数据，当前获取板块指标数据
+        File_BK = Tdx.SearchInFileList(filePath,ID_BK, '')
+        Data_BK = Tdx.HandlerTdxDataToList(File_BK,cTimeTypeList[0][0],cTimeTypeList[-1][0])
+
+
+    
+    
 
 def main():
     startTime = '2018/06/07-00:00'  # 数据开始波段
@@ -102,5 +179,6 @@ def exportPriceRangeByNaturalTime(sTime, eTime):
 
     
 if __name__ == '__main__':
-    main()
+    # main()
     # exportPriceRangeByNaturalTime('2018/12/24-00:00','2018/12/24-00:00')
+    BatchProcessing(".//BAT.json")
