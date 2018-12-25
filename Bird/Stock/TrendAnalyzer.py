@@ -43,6 +43,8 @@ class Trend(object):
                 sFlag = 0xFF # 设定为无效值 避免2次进入
             if eIndex == 0 and cDate >= eDate:
                 eIndex = i
+        if (eIndex == 0):
+            eIndex = i
 
         return TimeTypeList[sIndex:(eIndex+1)]
 

@@ -7,6 +7,10 @@
 
 import datetime
 
+asd = datetime.datetime.strptime('2018/06/07-00:00', '%Y/%m/%d-%H:%M')
+
+print ((asd+datetime.timedelta(days=-1)).strftime('%Y/%m/%d-%H:%M'))
+
 
 asd = datetime.datetime.strptime('2018/06/07-00:00', '%Y/%m/%d-%H:%M')
 print(asd.strftime('%Y%m%d'))
@@ -14,24 +18,31 @@ print(asd.strftime('%Y%m%d'))
 asd = datetime.datetime.now()
 print(asd.strftime('%Y/%m/%d-%H:%M'))
 
-import pickle
+for i in range(10):
+     pass
+print(i)
+
+asd = [1,2,3,4,5,6,7,8,9,0]
+print (asd[8:9])
+
+# import pickle
  
-data1 = {'a': [1, 2.0, 3, 4+6j],
-     'b': ('string', u'Unicode string'),
-     'c': None}
+# data1 = {'a': [1, 2.0, 3, 4+6j],
+#      'b': ('string', u'Unicode string'),
+#      'c': None}
  
-selfref_list = [1, 2, 3]
-selfref_list.append(selfref_list)
+# selfref_list = [1, 2, 3]
+# selfref_list.append(selfref_list)
  
-output = open('data.pkl', 'wb')
+# output = open('data.pkl', 'wb')
  
-# Pickle dictionary using protocol 0.
-pickle.dump(data1, output)
+# # Pickle dictionary using protocol 0.
+# pickle.dump(data1, output)
  
-# Pickle the list using the highest protocol available.
-pickle.dump(selfref_list, output, -1)
+# # Pickle the list using the highest protocol available.
+# pickle.dump(selfref_list, output, -1)
  
-output.close()
+# output.close()
 
 # list1 = [[2],[3]]
 # list2 = [[6],[1],[2]]

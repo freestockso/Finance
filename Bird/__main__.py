@@ -16,8 +16,8 @@ def main():
     ID_ZS_SH = '399300'             # 标的指数，以此划分波段
     NAME_ZS_SH = '沪深300'          # 标的指数名称
     ID_BK = 'Categorys'             # 分析目标数据文件夹名
-    RangeNum = 50                    # 输出波段数
-    NeedToTyping = False            # 需不需要做分型统计
+    RangeNum = 7                    # 输出波段数
+    NeedToTyping = True            # 需不需要做分型统计
 
     if endTime == None:
         endTime = datetime.datetime.now().strftime('%Y/%m/%d-%H:%M')
@@ -58,21 +58,47 @@ def main():
             print("Error: 未读取到分型数据，程序停止")
             sys.exit()
 
-    print(typeTimeList)
-    sys.exit()
+    cTimeTypeList = T.cutTimeRange(typeTimeList,startTime,endTime)
 
     # 获取指标数据，当前获取板块指标数据
     File_BK = Tdx.SearchInFileList(filePath,ID_BK, '')
-    Data_BK = Tdx.HandlerTdxDataToList(File_BK,startTime,endTime)
+    Data_BK = Tdx.HandlerTdxDataToList(File_BK,cTimeTypeList[0][0],cTimeTypeList[-1][0])
 
     # 基于标的数据分型后的时间段，计算数据波段涨幅
-    listRange = T.calcPriceRange(Data_BK, typeTimeList)
+    listRange = T.calcPriceRange(Data_BK, cTimeTypeList)
     # 按时间轴，增加数据波段统计涨幅,  结果会存储在 listRange 和 typeTimeList，添加1-2组数据。
-    RangeNum = T.calcPriceXRange(listRange, typeTimeList, RangeNum, Data_BK)
+    RangeNum = T.calcPriceXRange(listRange, cTimeTypeList, RangeNum, Data_BK)
     # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
-    ExpModule.FormatData2TXT(typeTimeList,listRange,RangeNum)
+    ExpModule.FormatData2TXT(cTimeTypeList,listRange,RangeNum)
 
     print('Done')
+
+def exportPriceRangeByNaturalTime(sTime, eTime):
+
+    DataPath = r'.\StockData'       # 数据路径
+    ID_BK = 'Categorys'             # 分析目标数据文件夹名
+
+    # 数据源初始化
+    Tdx = TdxData.TdxDataEngine(DataPath)
+    filePath = Tdx.GetTdxFileList()
+    # 创建时间&分型列表
+    cTimeTypeList = []
+    cTimeTypeList.append([sTime,0])
+    cTimeTypeList.append([eTime,0])
+    # 创建分析对象
+    T = TrendAnalyzer.Trend()
+    # 获取指标数据，当前获取板块指标数据
+    File_BK = Tdx.SearchInFileList(filePath,ID_BK, '')
+    # 获取数据的时间前推5天
+    tTime = datetime.datetime.strptime(cTimeTypeList[0][0], '%Y/%m/%d-%H:%M')
+    tTime = (tTime + datetime.timedelta(days=-5)).strftime('%Y/%m/%d-%H:%M')
+    Data_BK = Tdx.HandlerTdxDataToList(File_BK,tTime,cTimeTypeList[-1][0])
+    # 基于标的数据分型后的时间段，计算数据波段涨幅
+    listRange = T.calcPriceRange(Data_BK, cTimeTypeList)
+    # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
+    ExpModule.FormatData2TXT(cTimeTypeList,listRange)
+
     
 if __name__ == '__main__':
     main()
+    # exportPriceRangeByNaturalTime('2018/12/24-00:00','2018/12/24-00:00')
