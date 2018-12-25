@@ -38,7 +38,10 @@ class Trend(object):
 
         for i in range(1,len(TimeTypeList)):
             cDate = datetime.datetime.strptime(TimeTypeList[i][0], '%Y/%m/%d-%H:%M')
-            if sIndex == 0 and sFlag == 0 and cDate >= sDate:
+            if sIndex == 0 and sFlag == 0 and cDate == sDate:
+                sIndex = i
+                sFlag = 0xFF # 设定为无效值 避免2次进入
+            elif sIndex == 0 and sFlag == 0 and cDate > sDate:
                 sIndex = i - 1
                 sFlag = 0xFF # 设定为无效值 避免2次进入
             if eIndex == 0 and cDate >= eDate:
@@ -51,7 +54,7 @@ class Trend(object):
     
     # its parameters is based on the result of calcPriceRange.
     # 根据rangenum数（波段数） ，以此为节点统计 波段涨幅。 涨幅相加。
-    # 此函数会改变 rDataList 和 TimeTypeList， 增加2组 波段涨幅 （第一组为后数第RangeNum个波段到数据最后波段，第二组为数据开始到后数第RangeNum-1个波段）
+    # 此函数会改变 rDataList 和 TimeTypeList， 增加2组 波段涨幅 （第1组为数据开始到后数第RangeNum-1个波段 第2组为后数第RangeNum个波段到数据最后波段，）
     # 返回波段数+2，因为增加2波数据
     def calcPriceXRange(self, rDataList, TimeTypeList, RangeNum, DataList):
         totalRangeNum = len(TimeTypeList) - 1
@@ -155,8 +158,11 @@ class Trend(object):
                             tDataList.append(value[i][OFFSET_CLOSE])
                         tDataList.append(value[i][OFFSET_CLOSE])
             tRangeList = []
-            for i in range(len(TimeList)-1): # 涨跌幅=(现价-上一个交易日收盘价)/上一个交易日收盘价*100%
-                rVal = '%.2f' % (((tDataList[i*2+3] - tDataList[i*2])/tDataList[i*2]) * 100)    #小数点保留2位,    "转百分数'%.2f%%'"
+            for i in range(len(TimeList)-1): 
+                # # 涨跌幅=(现价-上一个交易日收盘价)/上一个交易日收盘价*100%
+                # rVal = '%.2f' % (((tDataList[i*2+3] - tDataList[i*2])/tDataList[i*2]) * 100)    #小数点保留2位,    "转百分数'%.2f%%'"
+                # 涨跌幅=(现价-波段起始日收盘价)/上一个交易日收盘价*100%
+                rVal = '%.2f' % (((tDataList[i*2+3] - tDataList[i*2+1])/tDataList[i*2+1]) * 100)    #小数点保留2位,    "转百分数'%.2f%%'"
                 tRangeList.append(float(rVal))
             
             rDataList.append({key:tRangeList})

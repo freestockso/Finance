@@ -25,6 +25,11 @@ print(i)
 asd = [1,2,3,4,5,6,7,8,9,0]
 print (asd[8:9])
 
+
+asd1 = [[0],[1]]
+asd2 = [[2]]
+
+print (asd1+asd2)
 # import pickle
  
 # data1 = {'a': [1, 2.0, 3, 4+6j],

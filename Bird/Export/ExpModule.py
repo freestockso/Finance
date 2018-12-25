@@ -101,6 +101,7 @@ def FormatData2TXTForTDX(TimeTypeList,CODE,ID):
 def FormatData2TXT(TimeTypeList,CateData,xRangeNum = 1000):
     timeFlagList = []   #存储波段时间戳，转换规则如下。最后一个时间戳 为无效值。 20180131-20180228, 转换后0131-0228。
     typeFlagList = []   #存储分型
+    tIndex = 0
     for i in range(len(TimeTypeList)-1): 
         if (TimeTypeList[i+1][1] == 1):     # 顶分型
             cType = '+'
@@ -117,16 +118,21 @@ def FormatData2TXT(TimeTypeList,CateData,xRangeNum = 1000):
         typeFlagList.append(cType)
 
         if cType == '#1':
-            timeFlagList.append("数据起始日至第一个波段涨跌幅度")
+            time1 = TimeTypeList[0][0]
+            time2 = TimeTypeList[i+1][0]
+            tIndex = i + 1
         elif cType == '#2':
-            timeFlagList.append("当前所有波段涨跌幅度")
+            time1 = TimeTypeList[tIndex][0]
+            time2 = TimeTypeList[i + 1][0]
         else:
             time1 = TimeTypeList[i][0]
             time2 = TimeTypeList[i+1][0]
-            T_std1 = datetime.datetime.strptime(time1, '%Y/%m/%d-%H:%M')
-            T_std2 = datetime.datetime.strptime(time2, '%Y/%m/%d-%H:%M')
 
-            timeFlagList.append(str(T_std1.month * 100 + T_std1.day) + '-' + str(T_std2.month * 100 + T_std2.day))
+        T_std1 = datetime.datetime.strptime(time1, '%Y/%m/%d-%H:%M')
+        T_std2 = datetime.datetime.strptime(time2, '%Y/%m/%d-%H:%M')
+
+        timeFlagList.append(str((T_std1.year % 100)* 10000 + T_std1.month * 100 + T_std1.day) + '-' 
+        + str((T_std2.year % 100) * 10000 +T_std2.month * 100 + T_std2.day))
 
     rangeNum = len(TimeTypeList) - 1
     startRange = 0
@@ -142,8 +148,13 @@ def FormatData2TXT(TimeTypeList,CateData,xRangeNum = 1000):
                 rDataList.append((key,value[i]))
         rDataList = sorted(rDataList, key = itemgetter(1), reverse = True)
         AllData.append(rDataList)
+
+    fileFolder = '.\\Export\\'
+    cTime = datetime.datetime.now().strftime('%Y%m%d%H%M')
+    fileName = 'data' + cTime +'.txt'
+    filePath = fileFolder + fileName
     
-    f = open('.\\Export\\data.txt', 'w')
+    f = open(filePath, 'w')
 
     # 写入时间戳
     strTime = ''

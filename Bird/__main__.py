@@ -8,16 +8,15 @@ from DataBase import TdxData
 from Logger import Log
 
 def main():
-    startTime = '2018/01/01-00:00'  # 数据开始波段
-    # endTime = '2018/12/19-00:00'    # 数据结束波段
-    endTime = None               # 数据结束波段
+    startTime = '2018/06/07-00:00'  # 数据开始波段
+    endTime = '2018/12/25-00:00'    # 数据结束波段
     DataPath = r'.\StockData'       # 数据路径
     ID_ZS_CODE = '0'                # 标的指数，沪 = 1； 深 = 0
     ID_ZS_SH = '399300'             # 标的指数，以此划分波段
     NAME_ZS_SH = '沪深300'          # 标的指数名称
     ID_BK = 'Categorys'             # 分析目标数据文件夹名
-    RangeNum = 7                    # 输出波段数
-    NeedToTyping = True            # 需不需要做分型统计
+    RangeNum = 8                    # 输出波段数
+    NeedToTyping = False            # 需不需要做分型统计
 
     if endTime == None:
         endTime = datetime.datetime.now().strftime('%Y/%m/%d-%H:%M')
@@ -25,14 +24,14 @@ def main():
     # 数据源初始化
     Tdx = TdxData.TdxDataEngine(DataPath)
     filePath = Tdx.GetTdxFileList()
+    # 获取标的数据，以此为基础分型。
+    File_SH = Tdx.SearchInFileList(filePath,'',ID_ZS_SH)
+    # 数据起始时间为2000年，结束时间为当前最新时间。
+    Data_SH = Tdx.HandlerTdxDataToList(File_SH,'2000/01/01-00:00', datetime.datetime.now().strftime('%Y/%m/%d-%H:%M'))
     # 创建分析对象
     T = TrendAnalyzer.Trend()
 
     if NeedToTyping == True:
-        # 获取标的数据，以此为基础分型。
-        File_SH = Tdx.SearchInFileList(filePath,'',ID_ZS_SH)
-        # 数据起始时间为2000年，结束时间为当前最新时间。
-        Data_SH = Tdx.HandlerTdxDataToList(File_SH,'2000/01/01-00:00', datetime.datetime.now().strftime('%Y/%m/%d-%H:%M'))
         # 分析标的数据，将2维数组转化成dataframe
         tData = T.StockDataList2DataFrame(Data_SH[0][NAME_ZS_SH])
         # 基于缠论，标的数据去掉包含关系。
@@ -63,6 +62,9 @@ def main():
     # 获取指标数据，当前获取板块指标数据
     File_BK = Tdx.SearchInFileList(filePath,ID_BK, '')
     Data_BK = Tdx.HandlerTdxDataToList(File_BK,cTimeTypeList[0][0],cTimeTypeList[-1][0])
+
+    # 在板块数据中加入标的数据。
+    Data_BK += Data_SH
 
     # 基于标的数据分型后的时间段，计算数据波段涨幅
     listRange = T.calcPriceRange(Data_BK, cTimeTypeList)
