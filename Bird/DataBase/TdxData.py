@@ -54,13 +54,13 @@ class TdxDataEngine(object):
 
         for (root, dirs, files) in os.walk(self.DataPath):
 
-            CategoryName = root.split('\\')[-1]
+            CategoryName = os.path.basename(root)
             CategoryPath = root
 
             FileList = []
 
             for ef in files:
-                FileList.append(CategoryPath + '\\' + ef)
+                FileList.append(os.path.join(CategoryPath, ef))
 
             if len(FileList) != 0 :          
                 DataItem[CategoryName] = FileList
@@ -74,6 +74,8 @@ class TdxDataEngine(object):
     # id is number of shares，股票期货代码
     # FL_Data is file list that is dict
     # search by category or id
+    # 搜索一个文件夹下所有的文件列表 把文件夹名给 category即可 id 为空
+    # 搜索指定文件时 category为空，文件ID付给id即可。 文件ID 不是文件名，是股票代码值
     def SearchInFileList(self, FL_Data, category = '', id = ''):
 
         if not FL_Data and isinstance(FL_Data, dict):

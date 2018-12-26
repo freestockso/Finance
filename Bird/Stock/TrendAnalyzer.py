@@ -59,7 +59,7 @@ class Trend(object):
     def calcPriceXRange(self, rDataList, TimeTypeList, RangeNum, DataList):
         totalRangeNum = len(TimeTypeList) - 1
         preRangeNum = 0
-        if totalRangeNum > RangeNum:
+        if totalRangeNum > RangeNum and RangeNum != 0:
             preRangeNum = totalRangeNum - RangeNum
         else:
             RangeNum = totalRangeNum

@@ -18,18 +18,18 @@ print(asd.strftime('%Y%m%d'))
 asd = datetime.datetime.now()
 print(asd.strftime('%Y/%m/%d-%H:%M'))
 
-for i in range(10):
-     pass
-print(i)
+# for i in range(10):
+#      pass
+# print(i)
 
-asd = [1,2,3,4,5,6,7,8,9,0]
-print (asd[8:9])
+# asd = [1,2,3,4,5,6,7,8,9,0]
+# print (asd[8:9])
 
 
-asd1 = [[0],[1]]
-asd2 = [[2]]
+# asd1 = [[0],[1]]
+# asd2 = [[2]]
 
-print (asd1+asd2)
+# print (asd1+asd2)
 # import pickle
  
 # data1 = {'a': [1, 2.0, 3, 4+6j],
@@ -88,3 +88,13 @@ print (asd1+asd2)
 #     i.append(6)
 
 # print(ilist)
+import os
+i = 1
+for (root, dirs, files) in os.walk('.//StockData'):
+
+     print(i)
+     print(root)
+     # print(dirs)
+     # print(files)
+     print(os.path.basename(root))
+     i+=1

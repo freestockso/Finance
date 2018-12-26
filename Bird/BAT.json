@@ -4,7 +4,7 @@
         {
             "StartTime" : "2000/01/01-00:00",
             "EndTime" : "None",  
-            "DataPath" : ".//StockData",                 
+            "Folder" : "",                 
             "TRADE_CODE" : "0", 
             "ID_CODE" : "399300",
             "ID_NAME" : "沪深300"
@@ -14,11 +14,154 @@
     "cmd_data":
     [
         {
-            "StartTime" : "2018/06/07-00:00",
-            "EndTime" : "2018/12/25-00:00",  
-            "DataPath" : ".//StockData//Categorys",                 
+            "StartTime" : "2013/06/25-00:00",
+            "EndTime" : "2015/08/26-00:00",  
+            "Folder" : "Categorys",                 
             "ID_CODE" : "399300",                   
-            "RangeNum" : "8"
+            "RangeNum" : 5,
+            "Target" : 1,
+            "Summary" : 1,
+            "Comment" : "20130625低点至20150609高点，统计板块涨幅，再至20150826，探低点输出5个波段"
+        },
+        {
+            "StartTime" : "2015/08/26-00:00",
+            "EndTime" : "2016/02/29-00:00",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 0,
+            "Target" : 1,
+            "Summary" : 1,
+            "Comment" : "再探新低，输出所有波段"
+        },
+        {
+            "StartTime" : "2016/02/29-00:00",
+            "EndTime" : "2016/08/01-00:00",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 0,
+            "Target" : 1,
+            "Summary" : 1,
+            "Comment" : "震荡走势，输出所有波段"
+        },
+        {
+            "StartTime" : "2016/08/01-00:00",
+            "EndTime" : "2016/12/26-00:00",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 0,
+            "Target" : 1,
+            "Summary" : 1,
+            "Comment" : "破高点震荡，输出所有波段"
+        },
+        {
+            "StartTime" : "2016/12/26-00:00",
+            "EndTime" : "2017/05/11-00:00",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 0,
+            "Target" : 1,
+            "Summary" : 1,
+            "Comment" : "震荡走势，输出所有波段"
+        },
+        {
+            "StartTime" : "2017/05/11-00:00",
+            "EndTime" : "2018/01/26-00:00",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 0,
+            "Target" : 1,
+            "Summary" : 1,
+            "Comment" : "一波上扬，输出所有波段"
+        },
+        {
+            "StartTime" : "2018/01/26-00:00",
+            "EndTime" : "2018/07/06-00:00",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 0,
+            "Target" : 1,
+            "Summary" : 1,
+            "Comment" : "向下破位，输出所有波段"
+        },
+        {
+            "StartTime" : "2018/07/06-00:00",
+            "EndTime" : "2018/10/19-00:00",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 0,
+            "Target" : 1,
+            "Summary" : 1,
+            "Comment" : "向下破位，输出所有波段"
+        },
+        {
+            "StartTime" : "2018/10/19-00:00",
+            "EndTime" : "None",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 0,
+            "Target" : 1,
+            "Summary" : 1,
+            "Comment" : "向下破位，输出所有波段"
+        }
+
+    ],
+
+    "cmd_data-2016年上涨至最新":
+    [
+        {
+            "StartTime" : "2016/02/29-00:00",
+            "EndTime" : "2018/06/07-00:00",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 8,
+            "Target" : 1,
+            "Summary" : 1
+        },
+        {
+            "StartTime" : "2018/01/26-00:00",
+            "EndTime" : "2018/09/26-00:00",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 6,
+            "Target" : 1,
+            "Summary" : 1
+        },
+        {
+            "StartTime" : "2018/06/07-00:00",
+            "EndTime" : "None",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 8,
+            "Target" : 1,
+            "Summary" : 1
+        }
+    ],
+
+    "des_typing":
+    [
+        {
+            "StartTime" : "标的数据起始时间，默认值为 2000/01/01-00:00 ",
+            "EndTime" : "标的数据终止时间， 默认值为 None， 表示当前最新时间",  
+            "Folder" : "标的数据所在文件夹名，空则为在根目录下",                 
+            "TRADE_CODE" : "标的数据所以交易所代码，此数据用于通达信分型显示，沪 = 1； 深 = 0", 
+            "ID_CODE" : "标的数据的代码，沪深300为 399300",
+            "ID_NAME" : "标的数据的名称，沪深300 "
+        }   
+    ],
+
+    "des_data":
+    [
+        {
+            "StartTime" : "数据的起始时间，例如 ：2018/06/07-00:00",
+            "EndTime" : "数据的结束时间，例如：2018/12/25-00:00",
+            "Folder" : "数据所在文件夹名，例如板块数据为 Categorys", 
+            "ID_CODE" : "标的数据的代码，沪深300为 399300， 以此为标的分型波段", 
+            "RangeNum" : "当前时间段显示的波段数，从最新时间往前数的波段，默认是为0（Int）， 显示当前时间段所有波段。如果此值大于实际波段，输出实际波段数",
+            "Target" : "是否在结果输出中加入标的数据，大于0（Int）为需要，默认值为1",
+            "Summary" : "是否在结果中 添加2组波段统计数据，第一组为数据起始时间至当前输出结果第一波段间的涨幅统计（可能没有，当起始时间与输出的第一波段时间一致时）；第二组为输出所有波段统计。大于0（Int）为需要，默认值为1",
+            "Comment" : "当前时间段注释"
         }          
     ]
+
+
 }
