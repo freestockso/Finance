@@ -150,6 +150,8 @@ class Trend(object):
 
             tDataList = []
             for time in TimeList:
+                Found = False
+                IndexFlag = 0 # 当数据不全时 使用接近时间的前一个数据。
                 for i in range(len(value)):
                     if time == value[i][OFFSET_DATE]: # 以时间索引查找数据，记录当前日和上一日的收盘价，无上一日时 以当前日存储。每个日期存储2个数据。
                         if i > 0 :
@@ -157,6 +159,18 @@ class Trend(object):
                         else:
                             tDataList.append(value[i][OFFSET_CLOSE])
                         tDataList.append(value[i][OFFSET_CLOSE])
+                        Found = True
+                        break
+                    if (time > value[i-1][OFFSET_DATE] and time < value[i][OFFSET_DATE]):
+                        IndexFlag = i - 1
+                if Found == False:
+                    print("未找到对应数据：%s %s " % (key,time))
+                    if IndexFlag > 0 :
+                        tDataList.append(value[IndexFlag-1][OFFSET_CLOSE])
+                    else:
+                        tDataList.append(value[IndexFlag][OFFSET_CLOSE])
+                    tDataList.append(value[IndexFlag][OFFSET_CLOSE])
+
             tRangeList = []
             for i in range(len(TimeList)-1): 
                 # # 涨跌幅=(现价-上一个交易日收盘价)/上一个交易日收盘价*100%

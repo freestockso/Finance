@@ -89,7 +89,6 @@ def BatchProcessing(f_JSON, NeedToTyping = True):
         if Target > 0 :
             DataList += TypingData[1]
         # 基于标的数据分型后的时间段，计算数据波段涨幅
-        print(TimeTypeList)
         listRange = T.calcPriceRange(DataList, TimeTypeList)
         # 按时间轴，增加数据波段统计涨幅,  结果会存储在 listRange 和 typeTimeList，添加1-2组数据。
         if Summary > 0 :

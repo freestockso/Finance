@@ -88,13 +88,19 @@ print(asd.strftime('%Y/%m/%d-%H:%M'))
 #     i.append(6)
 
 # print(ilist)
-import os
-i = 1
-for (root, dirs, files) in os.walk('.//StockData'):
 
-     print(i)
-     print(root)
-     # print(dirs)
-     # print(files)
-     print(os.path.basename(root))
-     i+=1
+# import os
+# i = 1
+# for (root, dirs, files) in os.walk('.//StockData'):
+
+#      print(i)
+#      print(root)
+#      # print(dirs)
+#      # print(files)
+#      print(os.path.basename(root))
+#      i+=1
+
+if "2018/06/07-00:00" > "2018/06/06-00:00":
+     print('ok')
+else:
+     print('nok')

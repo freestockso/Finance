@@ -35,3 +35,6 @@
 2018-12-25 15:22:38,022 - Logger.Log - INFO - MongoDB连接成功
 2018-12-25 15:24:07,414 - Logger.Log - INFO - MongoDB连接成功
 2018-12-25 15:25:31,330 - Logger.Log - INFO - MongoDB连接成功
+2018-12-26 21:24:53,745 - Logger.Log - INFO - MongoDB连接失败
+2018-12-26 21:36:56,273 - Logger.Log - INFO - MongoDB连接失败
+2018-12-26 21:57:37,912 - Logger.Log - INFO - MongoDB连接失败
