@@ -98,7 +98,7 @@ def ExpTypingToTdx(TimeTypeList,CODE,ID,Expfile):
     f.close
 
 # xRangeNum 整合数据后 从后向前保留波段数。
-def ExpData2TXT(TimeTypeList,CateData,Expfile,xRangeNum = 1000):
+def ExpData2TXT(TimeTypeList, CateData, PowerList, Expfile,xRangeNum = 1000):
     timeFlagList = []   #存储波段时间戳，转换规则如下。最后一个时间戳 为无效值。 20180131-20180228, 转换后0131-0228。
     typeFlagList = []   #存储分型
     tIndex = 0
@@ -164,8 +164,10 @@ def ExpData2TXT(TimeTypeList,CateData,Expfile,xRangeNum = 1000):
         for j in range(startRange, rangeNum):
             dList = AllData[j]
             strData += dList[i][0] + '\t'
-            strData += str(dList[i][1]) + '\t\t'
-        strData += '\n'    
+            strData += str(dList[i][1]) + '\t'
+            Power = PowerList[j]
+            strData += str(Power[i]) + '\t'
+        strData += '\n'
         f.writelines(strData)
     f.close
 

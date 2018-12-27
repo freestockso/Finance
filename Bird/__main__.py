@@ -88,11 +88,20 @@ def BatchProcessing(f_JSON, NeedToTyping = True):
         # 在板块数据中加入标的数据。
         if Target > 0 :
             DataList += TypingData[1]
+            ID_NAME = list(TypingData[1][0].keys())[0]
         # 基于标的数据分型后的时间段，计算数据波段涨幅
-        listRange = T.calcPriceRange(DataList, TimeTypeList)
-        # 按时间轴，增加数据波段统计涨幅,  结果会存储在 listRange 和 typeTimeList，添加1-2组数据。
+        RangeList = T.calcPriceRange(DataList, TimeTypeList)
+        # 按时间轴，增加数据波段统计涨幅,  结果会存储在 RangeList 和 typeTimeList，添加1-2组数据。
         if Summary > 0 :
-            RangeNum = T.calcPriceXRange(listRange, TimeTypeList, RangeNum, DataList)
+            RangeNum = T.calcPriceXRange(RangeList, TimeTypeList, RangeNum, DataList)
+        # 数据降序排列
+        SortedRangeList = T.RangeListSort(RangeList,TimeTypeList)
+        # 在数据排序的基础上分强弱分类,必须有标的数据，排序数据仅支持降序排列
+        if Target > 0 :
+            PowerList = T.PowerClassification(SortedRangeList,ID_NAME)
+        else:
+            PowerList = []
+
         # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
         ExpFile ='Data' + '_' + Folder + '_' 
         tTime = datetime.datetime.strptime(StartTime, '%Y/%m/%d-%H:%M')
@@ -100,7 +109,7 @@ def BatchProcessing(f_JSON, NeedToTyping = True):
         tTime = datetime.datetime.strptime(EndTime, '%Y/%m/%d-%H:%M')
         ExpFile += tTime.strftime('%Y%m%d%H%M') + '.txt'
         ExpFile = os.path.join(ExpPath,ExpFile)
-        ExpModule.ExpData2TXT(TimeTypeList,listRange,ExpFile,RangeNum)
+        ExpModule.ExpData2TXT(TimeTypeList,RangeList,PowerList,ExpFile,RangeNum)
 
 def main():
     startTime = '2018/01/26-00:00'  # 数据开始波段

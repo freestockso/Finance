@@ -7,6 +7,7 @@ import mpl_finance as mpf
 import matplotlib.pyplot as plt
 import matplotlib.dates as dates
 from matplotlib.ticker import Formatter
+from operator import itemgetter, attrgetter
 import datetime
 
 import sys
@@ -26,7 +27,145 @@ class Trend(object):
     def cPrint(self, Content):
         #print(Content)
         pass
+    
+    def GetAverage(self,NumList):
+        Sum = 0
+        for i in range(len(NumList)):
+            Sum += NumList[i]
+        return Sum / len(NumList)
 
+    # 对排序数据进行强弱分类 ++强，+偏强，-偏弱，--弱
+    def PowerClassification(self, SortedDataList,ID_NAME):
+        plusplus = 10
+        plus = 18
+        minus = 18
+        minusminus = 10
+        plusplusType = 11
+        plusType = 1
+        minusType = -1
+        minusminusType = -11
+        RangeNum = len(SortedDataList)
+
+        # 将数据转化为2维列表,存储在 AllData
+        AllData = []
+        # TargetIndex 为1维列表 用于记录标的数据索引
+        TargetIndex = []
+        for i in range(RangeNum):
+            DataList = []
+            for j in range(len(SortedDataList[i])):
+                if SortedDataList[i][j][0] == ID_NAME:
+                    TargetIndex.append(j)
+                DataList.append(SortedDataList[i][j][1])
+            AllData.append(DataList)
+        
+        # Quota 为2维列表 用于每组波段标的数据值和当前波段数据平均值
+        Quota = []
+        for i in range(RangeNum):
+            Quota.append([AllData[i][TargetIndex[i]],self.GetAverage(AllData[i])])
+        
+        # 波段数据强弱显示存在Power列表中,二维列表
+        Power = []
+        for i in range(RangeNum):
+            cPower = [0] * len(AllData[i])
+            # 当前波段数据平均涨幅大于0 为上行
+            if Quota[i][1] >= 0:    # 上行
+                # 先选++组
+                k = 0
+                for j in range(len(AllData[i])):
+                    # 如果等于标的数据索引，退出
+                    if j == TargetIndex[i]:
+                        continue
+                    # 必须大于A且大于B且最多10个（10个最大值）
+                    if AllData[i][j] > Quota[i][0] and  AllData[i][j] > Quota[i][1] and k < plusplus:
+                        cPower[j] = plusplusType
+                        k += 1
+                # 再选--组
+                k = 0
+                for j in range((len(AllData[i])-1),-1,-1):
+                    # 如果等于标的数据索引，退出
+                    if j == TargetIndex[i]:
+                        continue
+                    # 必须小于A且小于B且最多10个（10个最大值）
+                    if AllData[i][j] < Quota[i][0] and  AllData[i][j] < Quota[i][1] and k < minusminus:
+                        cPower[j] = minusminusType
+                        k += 1
+                # 再选+组
+                k = 0
+                for j in range(len(AllData[i])):
+                    # 如果等于标的数据索引，退出
+                    if j == TargetIndex[i]:
+                        continue
+                    # 必须大于B且最多18个（++组后18个最大值）
+                    if cPower[j] == 0 and AllData[i][j] > Quota[i][1] and k < plus:
+                        cPower[j] = plusType
+                        k += 1
+                # 最后选-组
+                for j in range(len(AllData[i])):
+                    # 如果等于标的数据索引，退出
+                    if j == TargetIndex[i]:
+                        continue
+                    # 剩余项都算-组
+                    if cPower[j] == 0:
+                        cPower[j] = minusType
+                Power.append(cPower)
+            else:   # 下行
+                # 先选--组
+                k = 0
+                for j in range((len(AllData[i])-1),-1,-1):
+                    # 如果等于标的数据索引，退出
+                    if j == TargetIndex[i]:
+                        continue
+                    # 必须小于A且小于B且最多10个（10个最大值）
+                    if AllData[i][j] < Quota[i][0] and  AllData[i][j] < Quota[i][1] and k < minusminus:
+                        cPower[j] = minusminusType
+                        k += 1
+                # 再选++组
+                k = 0
+                for j in range(len(AllData[i])):
+                    # 如果等于标的数据索引，退出
+                    if j == TargetIndex[i]:
+                        continue
+                    # 必须大于A且大于B且最多10个（10个最大值）
+                    if AllData[i][j] > Quota[i][0] and  AllData[i][j] > Quota[i][1] and k < plusplus:
+                        cPower[j] = plusplusType
+                        k += 1
+                # 再选-组
+                k = 0
+                for j in range((len(AllData[i])-1),-1,-1):
+                    # 如果等于标的数据索引，退出
+                    if j == TargetIndex[i]:
+                        continue
+                    # 再选-组，必须小于B且最多18个（--后18个最小值）
+                    if cPower[j] == 0 and AllData[i][j] < Quota[i][1] and k < plus:
+                        cPower[j] = minusType
+                        k += 1
+                # 最后选+组
+                for j in range(len(AllData[i])):
+                    # 如果等于标的数据索引，退出
+                    if j == TargetIndex[i]:
+                        continue
+                    # 剩余项都算+组
+                    if cPower[j] == 0:
+                        cPower[j] = plusType
+                Power.append(cPower)
+
+        return Power
+
+
+
+
+    # 波段涨幅列表排序，返回结果为2维列表 例如 [[('航空', -4.42), ('石油', -5.57), ('电力', -6.88)]]
+    # Mode = True 为降序，Mode = False 为升序
+    def RangeListSort(self, RangeList, TimeTypeList, Mode = True):
+        AllData = []
+        for i in range(len(TimeTypeList) - 1):
+            rDataList = []
+            for dictData in RangeList:
+                for key,value in dictData.items(): 
+                    rDataList.append((key,value[i]))
+            rDataList = sorted(rDataList, key = itemgetter(1), reverse = Mode)
+            AllData.append(rDataList)
+        return AllData
 
     def cutTimeRange(self, TimeTypeList, sTime, eTime):
         sIndex = 0
