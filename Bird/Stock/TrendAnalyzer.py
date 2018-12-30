@@ -20,6 +20,11 @@ from DataBase import TdxData
 class Trend(object):
     
     def __init__(self):
+        self.TYPING_NULL = 0        # 无顶底分型
+        self.TYPING_TOP = 1         # 顶分型
+        self.TYPING_BTM = -1        # 底分型
+        self.SummaryData1 = 0       # 统计数据1存在标识， 0为不存在，1为存在。
+        self.SummaryData2 = 0       # 统计数据2存在标识， 0为不存在，1为存在。
         self.SeqNum = 0
         self.SeqDate = pandas.date_range('2000/1/1','2020/1/1', freq = '1D')
         self.writeLog = Log.Logger('TrendAnalyzer.txt')
@@ -33,6 +38,9 @@ class Trend(object):
         for i in range(len(NumList)):
             Sum += NumList[i]
         return Sum / len(NumList)
+    
+    def PowerWave(self, PowerList):
+        pass
 
     # 对排序数据进行强弱分类 ++强，+偏强，-偏弱，--弱
     def PowerClassification(self, SortedDataList,ID_NAME):
@@ -40,10 +48,10 @@ class Trend(object):
         plus = 18
         minus = 18
         minusminus = 10
-        plusplusType = 11
-        plusType = 1
-        minusType = -1
-        minusminusType = -11
+        plusplusType = 'pp'
+        plusType = 'p'
+        minusType = 'm'
+        minusminusType = 'mm'
         RangeNum = len(SortedDataList)
 
         # 将数据转化为2维列表,存储在 AllData
@@ -136,7 +144,7 @@ class Trend(object):
                     if j == TargetIndex[i]:
                         continue
                     # 再选-组，必须小于B且最多18个（--后18个最小值）
-                    if cPower[j] == 0 and AllData[i][j] < Quota[i][1] and k < plus:
+                    if cPower[j] == 0 and AllData[i][j] < Quota[i][1] and k < minus:
                         cPower[j] = minusType
                         k += 1
                 # 最后选+组
@@ -189,13 +197,61 @@ class Trend(object):
             eIndex = i
 
         return TimeTypeList[sIndex:(eIndex+1)]
+    
+    # 根据时间波段分型列表，分别输出波段时间和波段类型
+    # ExpTimeList = []   #存储波段时间戳，转换规则如下。最后一个时间戳 为无效值。 20180131-20180228, 转换后0131-0228。
+    # ExpTypeList = []   #存储分型
+    # 返回时间分型，总的波段数
+    def GetRangeInfo(self, TimeTypeList, ExpRangeTime, ExpRangeType,SumFlag = ()):
+        TotalRangeNum = len(TimeTypeList) - 1
+        SumNum = 0
+        SumIndex = []
+        j = 0
+        for i in len(SumFlag):
+            if SumFlag[i] == 1:
+                SumNum += 1 
+                SumIndex.append(i+1)
+        tIndex = 0
+        for i in range(TotalRangeNum): # 波段类型为当前时间周期内后一个分型类型，统计数据类型 单独处理
+            if (i == (TotalRangeNum - SumNum)): # 判断当前索引是不是统计数据。
+                cType = '#' + str(SumIndex[j])
+                j += 1
+            elif (TimeTypeList[i+1][1] == 1):     # 顶分型
+                cType = '+'
+            elif (TimeTypeList[i+1][1] == -1):  # 底分型
+                cType = '-'
+            elif(TimeTypeList[i+1][1] == 0):    # 无分型 一般为数据开始或结束波段
+                cType = '*'
+            else:
+                cType = 'Error'
+            ExpRangeType.append(cType)
 
+            if cType == '#1':
+                time1 = TimeTypeList[0][0]
+                time2 = TimeTypeList[i+1][0]
+                tIndex = i + 1
+            elif cType == '#2':
+                time1 = TimeTypeList[tIndex][0]
+                time2 = TimeTypeList[i + 1][0]
+            else:
+                time1 = TimeTypeList[i][0]
+                time2 = TimeTypeList[i+1][0]
+
+            T_std1 = datetime.datetime.strptime(time1, '%Y/%m/%d-%H:%M')
+            T_std2 = datetime.datetime.strptime(time2, '%Y/%m/%d-%H:%M')
+
+            ExpRangeTime.append(str((T_std1.year % 100)* 10000 + T_std1.month * 100 + T_std1.day) + '-' 
+            + str((T_std2.year % 100) * 10000 +T_std2.month * 100 + T_std2.day))
+        
+        return TotalRangeNum
     
     # its parameters is based on the result of calcPriceRange.
     # 根据rangenum数（波段数） ，以此为节点统计 波段涨幅。 涨幅相加。
     # 此函数会改变 rDataList 和 TimeTypeList， 增加2组 波段涨幅 （第1组为数据开始到后数第RangeNum-1个波段 第2组为后数第RangeNum个波段到数据最后波段，）
-    # 返回波段数+2，因为增加2波数据
+    # 返回波段数据标识列表
     def calcPriceXRange(self, rDataList, TimeTypeList, RangeNum, DataList):
+        self.SummaryData1 = 0
+        self.SummaryData2 = 0
         totalRangeNum = len(TimeTypeList) - 1
         preRangeNum = 0
         if totalRangeNum > RangeNum and RangeNum != 0:
@@ -205,9 +261,12 @@ class Trend(object):
         
         Temp_TimeTypeList = []
         Temp_TimeTypeList.append(TimeTypeList[0])
+        # 新增统计数据时间段的分型为TYPING_NULL
         if preRangeNum > 0:
-            Temp_TimeTypeList.append([TimeTypeList[preRangeNum][0],2])
-        Temp_TimeTypeList.append([TimeTypeList[-1][0],3])
+            Temp_TimeTypeList.append([TimeTypeList[preRangeNum][0],self.TYPING_NULL])
+            self.SummaryData1 = 1
+        Temp_TimeTypeList.append([TimeTypeList[-1][0],self.TYPING_NULL])
+        self.SummaryData2 = 1
 
         Temp_listRange = self.calcPriceRange(DataList, Temp_TimeTypeList)
 
@@ -221,7 +280,7 @@ class Trend(object):
                 else:
                     print("Error:数据类型不匹配。")
 
-        return (RangeNum + 2)
+        return (RangeNum + self.SummaryData1 + self.SummaryData2)
     
     
     # # its parameters is based on the result of calcPriceRange.
@@ -495,7 +554,7 @@ class Trend(object):
     def Candlestick_TypeAnalysis(self, kData, Mode = False):
         
         i = 0
-        preType = 0
+        preType = self.TYPING_NULL
         preHigh = 0
         preLow = 0
         preIndex = -5    #记录当前K线索引
@@ -517,20 +576,20 @@ class Trend(object):
                 Data2.iloc[-1].low > Data1.iloc[-1].low and Data2.iloc[-1].low > Data3.iloc[-1].low
                 ):
                 # 当前数据为顶分型
-                if preType == 0 or preType == 1: #同顶分型 比较高点
+                if preType == self.TYPING_NULL or preType == self.TYPING_TOP: #同顶分型 比较高点
                     if Data2.iloc[-1].high < preHigh: # 当前高点低于之前高点 忽略当前分型
                         i += 1
                         self.cPrint("同顶分型 比较高点, 当前高点低于之前高点 忽略当前分型")
                         self.cPrint(Data2)
                         continue
                     else: # 当前高点高于之前高点，“不需要”满足结合律，在之前项基础上保存当前项
-                        preType = 1
+                        preType = self.TYPING_TOP
                         preHigh = Data2.iloc[-1].high
                         preLow = Data2.iloc[-1].low
                         preIndex = i + 1
-                        typeDict[preKey] = [i + 1, 1] # 更新当前顶分型
+                        typeDict[preKey] = [i + 1, self.TYPING_TOP] # 更新当前顶分型
                         i += 1
-                elif preType == -1: # 不同分型
+                elif preType == self.TYPING_BTM: # 不同分型
                     if Data2.iloc[-1].high < preHigh or Data2.iloc[-1].low < preLow: # 顶分型的顶最低价高于上一个底分型的最低价，顶最高价高于上一个底最高价
                         i += 1
                         self.cPrint("顶分型 分型的顶最低价高于上一个底分型的最低价，顶最高价高于上一个底最高价")
@@ -542,7 +601,7 @@ class Trend(object):
                         i += 1
                         continue
                     else: #把当前数据赋值给之前数据，添加当前数据为新的顶分型
-                        preType = 1
+                        preType = self.TYPING_TOP
                         preHigh = Data2.iloc[-1].high
                         preLow = Data2.iloc[-1].low
                         preIndex = i + 1
@@ -554,20 +613,20 @@ class Trend(object):
                 Data2.iloc[-1].low < Data1.iloc[-1].low and Data2.iloc[-1].low < Data3.iloc[-1].low
                 ):
                 # 当前数据为底分型
-                if preType == 0 or preType == -1: #同底分型 比较低点
+                if preType == self.TYPING_NULL or preType == self.TYPING_BTM: #同底分型 比较低点
                     if Data2.iloc[-1].low > preLow: # 当前低点高于之前低点 忽略当前分型
                         self.cPrint("同底分型 比较低点 当前低点高于之前低点 忽略当前分型")
                         self.cPrint(Data2)
                         i += 1
                         continue
                     else: # 当前低点低于之前低点，“不需要”满足结合律，在之前项基础上保存当前项
-                        preType = -1
+                        preType = self.TYPING_BTM
                         preHigh = Data2.iloc[-1].high
                         preLow = Data2.iloc[-1].low
                         preIndex = i + 1
-                        typeDict[preKey] = [i + 1, -1] #更新当前底分型
+                        typeDict[preKey] = [i + 1, self.TYPING_BTM] #更新当前底分型
                         i += 1
-                elif preType == 1: # 不同分型
+                elif preType == self.TYPING_TOP: # 不同分型
                     if Data2.iloc[-1].high > preHigh or Data2.iloc[-1].low > preLow: # 底分型的底最高价低于上一个顶分型的最高价，底最低价低于上一个顶最低价
                         self.cPrint("#底分型的底最高价低于上一个顶分型的最高价，底最低价低于上一个顶最低价")
                         self.cPrint(Data2)
@@ -579,7 +638,7 @@ class Trend(object):
                         i += 1
                         continue
                     else: # 把当前数据赋值给之前数据，添加当前数据为新的底分型
-                        preType = -1
+                        preType = self.TYPING_BTM
                         preHigh = Data2.iloc[-1].high
                         preLow = Data2.iloc[-1].low
                         preIndex = i + 1
@@ -595,9 +654,9 @@ class Trend(object):
             typeTimeList.append(value)
         if Mode == True and len(typeTimeList) > 0:
             if (typeTimeList[0][0] != 0): #第一个数据kData索引不是0时，添加kData第一个数据
-                typeTimeList.insert(0,[0,0]) # kData 第一个数据索引为0，分型为空
+                typeTimeList.insert(0,[0,self.TYPING_NULL]) # kData 第一个数据索引为0，分型为空
             if (typeTimeList[len(typeTimeList)-1][0] != (len(kData)-1)): #最一个数据kData索引不是kData最后一个数据项时，添加kData最后一个数据
-                typeTimeList.append([(len(kData)-1),0]) # kData 最后一个数据索引为0，分型为空
+                typeTimeList.append([(len(kData)-1),self.TYPING_NULL]) # kData 最后一个数据索引为0，分型为空
 
         for item in typeTimeList:
             row = item[0]

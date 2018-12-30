@@ -98,75 +98,32 @@ def ExpTypingToTdx(TimeTypeList,CODE,ID,Expfile):
     f.close
 
 # xRangeNum 整合数据后 从后向前保留波段数。
-def ExpData2TXT(TimeTypeList, CateData, PowerList, Expfile,xRangeNum = 1000):
-    timeFlagList = []   #存储波段时间戳，转换规则如下。最后一个时间戳 为无效值。 20180131-20180228, 转换后0131-0228。
-    typeFlagList = []   #存储分型
-    tIndex = 0
-    for i in range(len(TimeTypeList)-1): 
-        if (TimeTypeList[i+1][1] == 1):     # 顶分型
-            cType = '+'
-        elif (TimeTypeList[i+1][1] == -1):  # 底分型
-            cType = '-'
-        elif(TimeTypeList[i+1][1] == 0):    # 无分型 一般为数据开始或结束波段
-            cType = '*'
-        elif(TimeTypeList[i+1][1] == 2):    # 无分型 数据起始日至第一个波段涨跌幅度
-            cType = '#1'
-        elif(TimeTypeList[i+1][1] == 3):    # 无分型 当前所有波段涨跌幅度
-            cType = '#2'
-        else:
-            cType = 'Error'
-        typeFlagList.append(cType)
+def ExpData2TXT(PowerList, ExpFile, SortedRangeData, RangeTime,RangeType,TotalRangeNum, xRangeNum = 1000):
 
-        if cType == '#1':
-            time1 = TimeTypeList[0][0]
-            time2 = TimeTypeList[i+1][0]
-            tIndex = i + 1
-        elif cType == '#2':
-            time1 = TimeTypeList[tIndex][0]
-            time2 = TimeTypeList[i + 1][0]
-        else:
-            time1 = TimeTypeList[i][0]
-            time2 = TimeTypeList[i+1][0]
-
-        T_std1 = datetime.datetime.strptime(time1, '%Y/%m/%d-%H:%M')
-        T_std2 = datetime.datetime.strptime(time2, '%Y/%m/%d-%H:%M')
-
-        timeFlagList.append(str((T_std1.year % 100)* 10000 + T_std1.month * 100 + T_std1.day) + '-' 
-        + str((T_std2.year % 100) * 10000 +T_std2.month * 100 + T_std2.day))
-
-    rangeNum = len(TimeTypeList) - 1
     startRange = 0
-    if (xRangeNum < rangeNum):
-        startRange = rangeNum - xRangeNum
+    if (xRangeNum < TotalRangeNum):
+        startRange = TotalRangeNum - xRangeNum
     
-    # 以波段为基础，整合板块数据，降序排列
-    AllData = []
-    for i in range(len(timeFlagList)):
-        rDataList = []
-        for dictData in CateData:
-            for key,value in dictData.items(): 
-                rDataList.append((key,value[i]))
-        rDataList = sorted(rDataList, key = itemgetter(1), reverse = True)
-        AllData.append(rDataList)
-    
-    f = open(Expfile, 'w')
+    f = open(ExpFile, 'w')
 
     # 写入时间戳
     strTime = ''
-    for i in range(startRange, rangeNum):
-        strTime += timeFlagList[i] + '\t' + typeFlagList[i] + '\t\t'
+    for i in range(startRange, TotalRangeNum):
+        strTime += RangeTime[i] + '\t' + RangeType[i] + '\t\t'
     strTime += '\n'
     f.writelines(strTime)
 
     # 写入数据
-    for i in range(len(CateData)):
+    for i in range(len(SortedRangeData[0])):
         strData = ''
-        for j in range(startRange, rangeNum):
-            dList = AllData[j]
+        for j in range(startRange, TotalRangeNum):
+            dList = SortedRangeData[j]
             strData += dList[i][0] + '\t'
             strData += str(dList[i][1]) + '\t'
-            Power = PowerList[j]
-            strData += str(Power[i]) + '\t'
+            if PowerList != []:
+                strData += str(PowerList[j][i]) + '\t'
+            else:
+                strData += '\t'
         strData += '\n'
         f.writelines(strData)
     f.close

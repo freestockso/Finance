@@ -11,7 +11,7 @@
         }   
     ],
 
-    "cmd_data":
+    "cmd_data_test":
     [
         {
             "StartTime" : "2018/06/07-00:00",
@@ -24,7 +24,7 @@
         }
     ],
 
-    "cmd_data_2013":
+    "cmd_data":
     [
         {
             "StartTime" : "2013/06/25-00:00",

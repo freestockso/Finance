@@ -101,7 +101,9 @@ def BatchProcessing(f_JSON, NeedToTyping = True):
             PowerList = T.PowerClassification(SortedRangeList,ID_NAME)
         else:
             PowerList = []
-
+        RangeTime = []
+        RangeType = []
+        TotalRangeNum = T.GetRangeInfo(TimeTypeList, RangeTime, RangeType,(T.SummaryData1,T.SummaryData1))
         # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
         ExpFile ='Data' + '_' + Folder + '_' 
         tTime = datetime.datetime.strptime(StartTime, '%Y/%m/%d-%H:%M')
@@ -109,7 +111,8 @@ def BatchProcessing(f_JSON, NeedToTyping = True):
         tTime = datetime.datetime.strptime(EndTime, '%Y/%m/%d-%H:%M')
         ExpFile += tTime.strftime('%Y%m%d%H%M') + '.txt'
         ExpFile = os.path.join(ExpPath,ExpFile)
-        ExpModule.ExpData2TXT(TimeTypeList,RangeList,PowerList,ExpFile,RangeNum)
+        ExpModule.ExpData2TXT(PowerList, ExpFile, SortedRangeList, RangeTime,RangeType,TotalRangeNum, RangeNum)
+        
 
 def main():
     startTime = '2018/01/26-00:00'  # 数据开始波段
