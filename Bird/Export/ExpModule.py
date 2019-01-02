@@ -98,6 +98,31 @@ def ExpTypingToTdx(TimeTypeList,CODE,ID,Expfile):
     f.close
 
 # xRangeNum 整合数据后 从后向前保留波段数。
+def ExpPowerWave(PowerList, SortedRangeData, ExpFile, SumFlag = ()):
+
+    SumNum = 0
+    for i in range(len(SumFlag)):
+        if SumFlag[i] == 1:
+            SumNum += 1 
+
+    ExpDict = {}
+    for i in range(len(SortedRangeData)-SumNum):
+        for j in range(len(SortedRangeData[i])):
+            if SortedRangeData[i][j][0] in ExpDict:
+                ExpDict[SortedRangeData[i][j][0]].append(PowerList[i][j])
+            else:
+                ExpDict[SortedRangeData[i][j][0]] = [PowerList[i][j]]
+
+    f = open(ExpFile, 'w')
+    for key, value in ExpDict.items():
+        strData = ''
+        for item in value:
+            strData += str(item) + '->'
+        f.writelines(key + ':' + strData[:-2] + '\n')
+    f.close
+
+
+# xRangeNum 整合数据后 从后向前保留波段数。
 def ExpData2TXT(PowerList, ExpFile, SortedRangeData, RangeTime,RangeType,TotalRangeNum, xRangeNum = 1000):
 
     startRange = 0

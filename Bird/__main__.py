@@ -98,21 +98,25 @@ def BatchProcessing(f_JSON, NeedToTyping = True):
         SortedRangeList = T.RangeListSort(RangeList,TimeTypeList)
         # 在数据排序的基础上分强弱分类,必须有标的数据，排序数据仅支持降序排列
         if Target > 0 :
-            PowerList = T.PowerClassification(SortedRangeList,ID_NAME)
+            PowerList = T.PowerClassification(SortedRangeList,ID_NAME)  # PowerList is based on the index of SortedRanged
         else:
             PowerList = []
         RangeTime = []
         RangeType = []
         TotalRangeNum = T.GetRangeInfo(TimeTypeList, RangeTime, RangeType,(T.SummaryData1,T.SummaryData1))
-        # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
+        # 设置输出文件名
         ExpFile ='Data' + '_' + Folder + '_' 
         tTime = datetime.datetime.strptime(StartTime, '%Y/%m/%d-%H:%M')
         ExpFile += tTime.strftime('%Y%m%d%H%M') + '-'
         tTime = datetime.datetime.strptime(EndTime, '%Y/%m/%d-%H:%M')
         ExpFile += tTime.strftime('%Y%m%d%H%M') + '.txt'
+        ExpFile_PW = ExpFile + '.pw'
         ExpFile = os.path.join(ExpPath,ExpFile)
+        ExpFile_PW = os.path.join(ExpPath,ExpFile_PW)
+        # 输出波段强弱走势，不包括统计数据
+        ExpModule.ExpPowerWave(PowerList,SortedRangeList,ExpFile_PW,(T.SummaryData1,T.SummaryData1))
+        # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
         ExpModule.ExpData2TXT(PowerList, ExpFile, SortedRangeList, RangeTime,RangeType,TotalRangeNum, RangeNum)
-        
 
 def main():
     startTime = '2018/01/26-00:00'  # 数据开始波段

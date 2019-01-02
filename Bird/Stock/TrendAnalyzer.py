@@ -207,7 +207,7 @@ class Trend(object):
         SumNum = 0
         SumIndex = []
         j = 0
-        for i in len(SumFlag):
+        for i in range(len(SumFlag)):
             if SumFlag[i] == 1:
                 SumNum += 1 
                 SumIndex.append(i+1)
