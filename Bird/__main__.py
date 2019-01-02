@@ -60,7 +60,12 @@ def BatchProcessing(f_JSON, NeedToTyping = True):
             f.close()
 
     # 数据波段输出
-    CmdList = BatCMD[CMD_DATA]
+    try:
+        CmdList = BatCMD[CMD_DATA]
+    except Exception as e:
+        print("程序停止运行！")
+        sys.exit()
+    
     for cmd in CmdList:
         StartTime = cmd["StartTime"]        # 数据时间范围，起始时间
         EndTime = cmd["EndTime"]            # 数据时间范围，终止时间，None 表示当前时间
@@ -114,7 +119,7 @@ def BatchProcessing(f_JSON, NeedToTyping = True):
         ExpFile = os.path.join(ExpPath,ExpFile)
         ExpFile_PW = os.path.join(ExpPath,ExpFile_PW)
         # 输出波段强弱走势，不包括统计数据
-        ExpModule.ExpPowerWave(PowerList,SortedRangeList,ExpFile_PW,(T.SummaryData1,T.SummaryData1))
+        ExpModule.ExpPowerWave(PowerList,SortedRangeList,ExpFile_PW,TotalRangeNum, RangeNum, (T.SummaryData1,T.SummaryData1))
         # 波段涨幅，降序，输出到Data.txt 导入 excel 模板，分析使用
         ExpModule.ExpData2TXT(PowerList, ExpFile, SortedRangeList, RangeTime,RangeType,TotalRangeNum, RangeNum)
 

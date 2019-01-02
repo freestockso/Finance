@@ -11,20 +11,20 @@
         }   
     ],
 
-    "cmd_data_test":
+    "cmd_data":
     [
         {
-            "StartTime" : "2018/06/07-00:00",
-            "EndTime" : "2018/08/20-00:00",  
+            "StartTime" : "2015/06/09-00:00",
+            "EndTime" : "2016/02/29-00:00",  
             "Folder" : "Categorys",                 
             "ID_CODE" : "399300",                   
-            "RangeNum" : 3,
+            "RangeNum" : 0,
             "Target" : 1,
             "Summary" : 1
         }
     ],
 
-    "cmd_data":
+    "cmd_data_2013":
     [
         {
             "StartTime" : "2013/06/25-00:00",
@@ -38,13 +38,23 @@
         },
         {
             "StartTime" : "2015/08/26-00:00",
+            "EndTime" : "2015/12/23-00:00",  
+            "Folder" : "Categorys",                 
+            "ID_CODE" : "399300",                   
+            "RangeNum" : 0,
+            "Target" : 1,
+            "Summary" : 1,
+            "Comment" : "大盘反弹"
+        },
+        {
+            "StartTime" : "2015/12/23-00:00",
             "EndTime" : "2016/02/29-00:00",  
             "Folder" : "Categorys",                 
             "ID_CODE" : "399300",                   
             "RangeNum" : 0,
             "Target" : 1,
             "Summary" : 1,
-            "Comment" : "再探新低，输出所有波段"
+            "Comment" : "再创新低"
         },
         {
             "StartTime" : "2016/02/29-00:00",
