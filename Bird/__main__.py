@@ -11,7 +11,7 @@ from Logger import Log
 
 def BatchProcessing(f_JSON, NeedToTyping = True):
     CMD_TYPING = 'cmd_typing'       # 批量处理数据分型
-    CMD_DATA = 'cmd_data'           # 批量处理数据分析，需以分型为基础。
+    CMD_DATA = 'cmd_range'           # 批量处理数据分析，需以分型为基础。
     ExpPath = os.path.join(os.getcwd(),"Export")                # 输出文件路径
     DataPath = os.path.join(os.getcwd(),"StockData")            # 数据根目录
     # 创建分析对象
@@ -108,7 +108,7 @@ def BatchProcessing(f_JSON, NeedToTyping = True):
             PowerList = []
         RangeTime = []
         RangeType = []
-        TotalRangeNum = T.GetRangeInfo(TimeTypeList, RangeTime, RangeType,(T.SummaryData1,T.SummaryData1))
+        TotalRangeNum = T.GetRangeInfo(TimeTypeList, RangeTime, RangeType,(T.SummaryData1,T.SummaryData2))
         # 设置输出文件名
         ExpFile ='Data' + '_' + Folder + '_' 
         tTime = datetime.datetime.strptime(StartTime, '%Y/%m/%d-%H:%M')

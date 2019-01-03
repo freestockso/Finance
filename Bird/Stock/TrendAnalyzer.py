@@ -216,6 +216,7 @@ class Trend(object):
             if (i == (TotalRangeNum - SumNum)): # 判断当前索引是不是统计数据。
                 cType = '#' + str(SumIndex[j])
                 j += 1
+                SumNum -= 1
             elif (TimeTypeList[i+1][1] == 1):     # 顶分型
                 cType = '+'
             elif (TimeTypeList[i+1][1] == -1):  # 底分型
