@@ -2,6 +2,18 @@
     "cmd_typing":
     [
         {
+            "StartTime" : "2018/11/01-00:00",
+            "EndTime" : "None",  
+            "Folder" : "",                 
+            "TRADE_CODE" : "0", 
+            "ID_CODE" : "399300",
+            "ID_NAME" : "沪深300"
+        }   
+    ],
+
+    "cmd_typing_300":
+    [
+        {
             "StartTime" : "2000/01/01-00:00",
             "EndTime" : "None",  
             "Folder" : "",                 
@@ -24,7 +36,7 @@
         }
     ],
 
-    "cmd_range":
+    "cmd_range_2013":
     [
         {
             "StartTime" : "2013/06/25-00:00",

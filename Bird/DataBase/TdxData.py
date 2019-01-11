@@ -82,7 +82,7 @@ class TdxDataEngine(object):
             self.writeLog.log(u'File list is Invalid')
             return
 
-        patternID = re.compile(r'\d{6}')    # 删除无效ID名
+        patternID = re.compile(r'.{4,6}')    # 删除无效ID名
         if re.match(patternID, id) == None:
             id = '#'    #invalid id， search by category
         
@@ -145,7 +145,7 @@ class TdxDataEngine(object):
         DataList = []
         AllData = []
 
-        pattHeader = re.compile(r"\d{6}") # matching file header
+        pattHeader = re.compile(r"[A-Za-z0-9]{4,6} ") # matching file header
         pattClass = re.compile(r"^\s{2,}") # matching data class
         pattData = re.compile(r"\d{4}/\d{2}/\d{2}") # matching data item
         pattFooter = re.compile(r"\D{4}:\D{3}") # matching file footer

@@ -46,6 +46,7 @@ def BatchProcessing(f_JSON, NeedToTyping = True):
             DataList = DataBase.HandlerTdxDataToList(FilePath,StartTime, EndTime)
             # 分析标的数据，将2维数组转化成dataframe
             DataFrame = T.StockDataList2DataFrame(DataList[0][ID_NAME])
+            print(DataFrame)
             # 基于缠论，标的数据去掉包含关系。
             RE_DataFrame = T.Candlestick_RemoveEmbodySeqMode(DataFrame)
             # 基于缠论分析标的数据顶底分型， 返回分型 顶底时间列表, 返回结果为2维数组
@@ -220,4 +221,4 @@ def exportPriceRangeByNaturalTime(sTime, eTime):
 if __name__ == '__main__':
     # main()
     # exportPriceRangeByNaturalTime('2018/12/24-00:00','2018/12/24-00:00')
-    BatchProcessing(".//BAT.json",False)
+    BatchProcessing(".//BAT.json",True)

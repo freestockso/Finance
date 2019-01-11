@@ -16,7 +16,14 @@ asd = datetime.datetime.strptime('2018/06/07-00:00', '%Y/%m/%d-%H:%M')
 print(asd.strftime('%Y%m%d'))
 
 asd = datetime.datetime.now()
-print(asd.strftime('%Y/%m/%d-%H:%M'))
+print(asd)
+# print(asd.strftime('%Y/%m/%d-%H:%M'))
+print(asd.strftime('%H%M'))
+
+
+
+#asd = datetime.datetime.strptime('2019-01-09 08:30:01.367000', '%Y-%m-%d %H:%M:%S.')
+#print(asd.strftime('%Y%m%d'))
 
 # for i in range(10):
 #      pass
@@ -137,3 +144,4 @@ print(asd.strftime('%Y/%m/%d-%H:%M'))
 #       sum += item  
 #    return sum/len(list)
 
+print(round(3.55))
