@@ -1123,7 +1123,7 @@ if __name__ == '__main__':
     DataFrame.columns = ['date','open','high','low','close']
     # 基于缠论，标的数据去掉包含关系。
     RE_DataFrame = T.Candlestick_RemoveEmbodySeqMode(DataFrame)
-    DataFrame = pandas.DataFrame(RE_DataFrame)
+    T.Candlestick_Drawing(RE_DataFrame)
     TimeTypeList = T.Candlestick_TypeAnalysis(RE_DataFrame,True)
     print(time.time())
 
