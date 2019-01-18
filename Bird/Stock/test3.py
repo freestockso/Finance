@@ -20,6 +20,12 @@ print(asd)
 # print(asd.strftime('%Y/%m/%d-%H:%M'))
 print(asd.strftime('%H%M'))
 
+OrderID = 'M1895'
+for i in range(10):
+    OrderID = OrderID.replace(str(i),'')
+
+print(OrderID)
+
 
 
 #asd = datetime.datetime.strptime('2019-01-09 08:30:01.367000', '%Y-%m-%d %H:%M:%S.')
