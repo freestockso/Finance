@@ -15,12 +15,13 @@ def init(context):
     # 品种列表
     bird.TypesList = [   
         {
-            'Type' : 'J',       # 品种名
-            'BuyStop' : 0,      # 买入止损点
-            'SellStop' : 0,     # 卖出止损点
-            'Amount' : 2,       # 总仓位
-            'Highest' : 2728,   # 历史最高价
-            'Lowest' : 1366,    # 历史最低价
+            'Type' : 'J',           # 品种名
+            'TypeIndex' : 'J99',    # 品种指数
+            'BuyStop' : 0,          # 买入止损点
+            'SellStop' : 0,         # 卖出止损点
+            'Amount' : 2,           # 总仓位
+            'Highest' : 0,          # 历史最高价
+            'Lowest' : 0,           # 历史最低价
         }
     ]
 
@@ -45,10 +46,15 @@ def init(context):
     bird.T = Trend()
     bird.S = Strategy()
     
+    # 注册合约行情
     GetContractName(context, bird)
     for s in bird.ContractList:
         # 初始化时订阅合约行情。订阅之后的合约行情会在handle_tick中进行更新。
         subscribe(s)
+
+    # 注册品种指数行情
+    for item in bird.TypesList:
+        subscribe(item['TypeIndex'])
  
     # 实时打印日志
     logger.info("RunInfo: {}".format(context.run_info))
@@ -80,12 +86,22 @@ def before_trading(context):
     
     GetContractName(context, bird)
 
+    # 注册合约行情
     for s in bird.ContractList:
         # 初始化时订阅合约行情。订阅之后的合约行情会在handle_tick中进行更新。
         subscribe(s)
 
-    bird.Timer = 0
- 
+    # 注册品种指数行情
+    for item in bird.TypesList:
+        subscribe(item['TypeIndex'])
+
+        BarData = history_bars(item['TypeIndex'], 200, '1d', ['high','low'])
+
+        HighList = [x[0] for x in BarData]
+        LowList = [x[1] for x in BarData]
+        item['Highest'] = max(HighList)
+        item['Lowest'] = min(LowList)
+
 # 你选择的期货数据更新将会触发此段逻辑
 def handle_bar(context, bar_dict):
     bird = context.bird
@@ -129,7 +145,8 @@ class Strategy(object):
                         DOHLCT[-5][self.high] > DOHLCT[-3][self.high] and DOHLCT[-1][self.close] > DOHLCT[-4][self.close]):
                         if context.portfolio.positions[CurCont].buy_quantity == 0:
                             Amount = self.PositionProportion(self.BUY, bar_dict[CurCont].close, bird.TypesList[i])
-                            buy_open(CurCont,Amount,style=MarketOrder())
+                            if Amount > 0:
+                                buy_open(CurCont,Amount,style=MarketOrder())
                         bird.TypesList[i]['BuyStop'] = DOHLCT[-2][self.close]
                     # 向上趋势，反转，买入开仓趋势止损信号。
                     if (DOHLCT[-6][self.high] < DOHLCT[-4][self.high] and DOHLCT[-4][self.high] < DOHLCT[-2][self.high] and
@@ -166,7 +183,8 @@ class Strategy(object):
                         DOHLCT[-5][self.low] < DOHLCT[-3][self.low] and DOHLCT[-1][self.close] < DOHLCT[-4][self.close]):
                         if context.portfolio.positions[CurCont].sell_quantity == 0:
                             Amount = self.PositionProportion(self.SELL, bar_dict[CurCont].close, bird.TypesList[i])
-                            sell_open(CurCont,Amount,style=MarketOrder())
+                            if Amount > 0:
+                                sell_open(CurCont,Amount,style=MarketOrder())
                         bird.TypesList[i]['SellStop'] = DOHLCT[-2][self.close]
                     # 向下趋势，反转
                     if (DOHLCT[-6][self.low] > DOHLCT[-4][self.low] and DOHLCT[-4][self.low] > DOHLCT[-2][self.low] and
@@ -187,7 +205,7 @@ class Strategy(object):
         # 计算最高点和最低点之间的均值。
         Avg = (TypeData['Highest'] + TypeData['Lowest']) / 2
         # 计算差值，差值等于 最高点或最低点减去10% 再减去均值的 绝对值。目的降噪
-        Diff = abs((TypeData['Highest'] * (1 - 0.1)) - Avg)
+        Diff = abs((TypeData['Highest'] * (1 - 0)) - Avg)
         
         if Flag == self.BUY:
             if Price <= Avg:

@@ -151,3 +151,11 @@ print(OrderID)
 #    return sum/len(list)
 
 print(round(3.55))
+
+
+mylist = [[1,5,6],[2,7,8],[3,9,10],[4,11,12]]
+list1 = [x[0] for x in mylist]
+list2 = [x[1:] for x in mylist]
+
+print(list1)
+print(list2)
